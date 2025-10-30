@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import { TEMPLATE_TYPES } from "../src/core/constants/template";
-import { getTemplateId } from "../src/lib/ids/template-id";
+import { TEMPLATE_TYPES } from "@/core/constants/template";
+import { getTemplateId } from "@/lib/ids/template-id";
 
 type TemplateEntry = {
   id: string;
@@ -186,7 +186,7 @@ async function updateTemplate(
   templatePath: string,
   merchant: string
 ) {
-  const srcRoot = path.resolve(__dirname, "..", "src");
+  const srcRoot = path.resolve(__dirname, "../../../..", "src");
   const absTemplatePath = path.join(srcRoot, templatePath);
 
   try {
@@ -238,7 +238,7 @@ async function updateTranslations(
   translationsPath: string,
   merchant: string
 ) {
-  const srcRoot = path.resolve(__dirname, "..", "src");
+  const srcRoot = path.resolve(__dirname, "../../../..", "src");
   const absTranslationsDir = path.join(srcRoot, translationsPath);
 
   if (!fs.existsSync(absTranslationsDir)) {
@@ -439,7 +439,7 @@ async function main() {
     process.exit(1);
   }
 
-  const rootDir = path.resolve(__dirname, "..");
+  const rootDir = path.resolve(__dirname, "../../../..");
 
   console.log(
     `🚀 Starting ${merchant} theme structure generation & migration...`
