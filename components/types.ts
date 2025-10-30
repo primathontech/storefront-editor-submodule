@@ -70,7 +70,7 @@ export interface ThemeableComponentProps extends BaseComponentProps {
  */
 export type PolymorphicComponentProps<
   C extends React.ElementType,
-  Props = {}
+  Props = {},
 > = Props & {
   as?: C;
 } & Omit<React.ComponentPropsWithoutRef<C>, keyof Props | "as">;
@@ -79,5 +79,5 @@ export type PolymorphicComponentProps<
  * Extract props type from a component
  */
 export type PropsOf<
-  C extends keyof JSX.IntrinsicElements | React.JSXElementConstructor<any>
+  C extends keyof JSX.IntrinsicElements | React.JSXElementConstructor<any>,
 > = JSX.LibraryManagedAttributes<C, React.ComponentPropsWithoutRef<C>>;

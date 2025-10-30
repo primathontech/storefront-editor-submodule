@@ -54,8 +54,8 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
         width: collapsed
           ? "60px"
           : typeof width === "number"
-          ? `${width}px`
-          : width,
+            ? `${width}px`
+            : width,
         transition: "width 0.2s ease-in-out",
       };
     }, [width, collapsed]);

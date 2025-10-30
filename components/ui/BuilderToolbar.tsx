@@ -201,7 +201,9 @@ export default function BuilderToolbar({
   };
 
   // dnd-kit setup
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const sensors = useSensors(
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 5,

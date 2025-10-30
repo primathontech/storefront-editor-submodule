@@ -124,6 +124,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
                   <div className="text-sm text-gray-600 mb-2">
                     Image Preview:
                   </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={String(value)}
                     alt={`Preview of ${label}`}

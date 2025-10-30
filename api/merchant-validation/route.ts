@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     const isValid = data.data.visualEditorId === themeCode;
-    
+
     return NextResponse.json({
       success: true,
       data: {
