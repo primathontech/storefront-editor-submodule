@@ -9,8 +9,6 @@ import type {
 export class EditorAPI {
   private static apiURL =
     process.env.NEXT_PUBLIC_EDITOR_API_URL || "http://localhost:3000";
-  private static serverUrl =
-    process.env.NEXT_PUBLIC_EDITOR_SERVER_URL || "http://localhost:3000";
 
   static async getThemes(): Promise<any> {
     try {

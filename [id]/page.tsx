@@ -1,12 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useParams } from "next/navigation";
-import EditorHeader2 from "../components/ui/EditorHeader2";
-import TemplateEditor from "../components/containers/TemplateEditor";
+import dynamic from "next/dynamic";
 import { api } from "../services/api";
-import TranslationEditor from "../components/containers/TranslationEditor";
 import { useEditorState } from "../stores/useEditorState";
+import { EditorHeaderShimmer } from "../components/ui/EditorHeaderShimmer";
+import { EditorContentShimmer } from "../components/ui/EditorContentShimmer";
+
+const EditorHeader2 = dynamic(() => import("../components/ui/EditorHeader2"), {
+  ssr: false,
+  loading: () => <EditorHeaderShimmer />,
+});
+
+const TemplateEditor = dynamic(
+  () => import("../components/containers/TemplateEditor"),
+  {
+    ssr: false,
+    loading: () => <EditorContentShimmer />,
+  }
+);
+
+const TranslationEditor = dynamic(
+  () => import("../components/containers/TranslationEditor"),
+  {
+    ssr: false,
+    loading: () => <EditorContentShimmer />,
+  }
+);
 
 export default function UnifiedEditorPage() {
   const params = useParams();
