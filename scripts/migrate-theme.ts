@@ -3,6 +3,8 @@ import path from "path";
 import { TEMPLATE_TYPES } from "@/core/constants/template";
 import { getTemplateId } from "@/lib/ids/template-id";
 
+const EDITOR_API_BASE_URL = "https://visual-editor-be.primathontech.co.in";
+
 type TemplateEntry = {
   id: string;
   name: string;
@@ -204,19 +206,11 @@ async function updateTemplate(
       return;
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_EDITOR_API_URL;
-    if (!baseUrl) {
-      console.warn(
-        `⚠️ Skipping API update for ${templateId}: NEXT_PUBLIC_EDITOR_API_URL not set`
-      );
-      return;
-    }
-
     const payload = {
       dataSources: template.dataSources ?? {},
       sections: template.sections ?? [],
     };
-    const url = `${baseUrl}/api/v1/themes/${merchant}/templates/${templateId}`;
+    const url = `${EDITOR_API_BASE_URL}/api/v1/themes/${merchant}/templates/${templateId}`;
     const res = await fetch(url, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -259,15 +253,7 @@ async function updateTranslations(
       const parsed = JSON.parse(content);
       const payload = { translations: parsed };
 
-      const baseUrl = process.env.NEXT_PUBLIC_EDITOR_API_URL;
-      if (!baseUrl) {
-        console.warn(
-          `⚠️ Skipping translations upload for ${templateId}/${lang}: NEXT_PUBLIC_EDITOR_API_URL not set`
-        );
-        continue;
-      }
-
-      const url = `${baseUrl}/api/v1/themes/${merchant}/translations/${templateId}/${lang}`;
+      const url = `${EDITOR_API_BASE_URL}/api/v1/themes/${merchant}/translations/${templateId}/${lang}`;
       const res = await fetch(url, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -293,19 +279,15 @@ async function getOrCreateMerchantMapping(
   merchantId: string,
   merchantName: string
 ): Promise<string> {
-  const baseUrl = process.env.NEXT_PUBLIC_EDITOR_API_URL;
-  if (!baseUrl) {
-    throw new Error(
-      "NEXT_PUBLIC_EDITOR_API_URL environment variable is required"
-    );
-  }
-
   try {
     // First, try to get existing mapping
-    const getRes = await fetch(`${baseUrl}/api/v1/merchants/${merchantId}`, {
-      method: "GET",
-      headers: { accept: "application/json" },
-    });
+    const getRes = await fetch(
+      `${EDITOR_API_BASE_URL}/api/v1/merchants/${merchantId}`,
+      {
+        method: "GET",
+        headers: { accept: "application/json" },
+      }
+    );
 
     if (getRes.ok) {
       const data = await getRes.json();
@@ -314,7 +296,7 @@ async function getOrCreateMerchantMapping(
 
     if (getRes.status === 404) {
       // Create new mapping
-      const postRes = await fetch(`${baseUrl}/api/v1/merchants`, {
+      const postRes = await fetch(`${EDITOR_API_BASE_URL}/api/v1/merchants`, {
         method: "POST",
         headers: {
           accept: "application/json",
@@ -348,23 +330,18 @@ async function syncThemeInBackend(payload: {
   templateStructure: TemplateGroup[];
 }): Promise<void> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_EDITOR_API_URL;
-    if (!baseUrl) {
-      console.warn(
-        "⚠️ Skipping theme sync: NEXT_PUBLIC_EDITOR_API_URL not set"
-      );
-      return;
-    }
-
     // Check if theme exists
-    const getRes = await fetch(`${baseUrl}/api/v1/themes/${payload.themeId}`, {
-      cache: "no-store",
-    });
+    const getRes = await fetch(
+      `${EDITOR_API_BASE_URL}/api/v1/themes/${payload.themeId}`,
+      {
+        cache: "no-store",
+      }
+    );
 
     if (getRes.ok) {
       // Update existing theme
       const putRes = await fetch(
-        `${baseUrl}/api/v1/themes/${payload.themeId}`,
+        `${EDITOR_API_BASE_URL}/api/v1/themes/${payload.themeId}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -387,7 +364,7 @@ async function syncThemeInBackend(payload: {
 
     if (getRes.status === 404) {
       // Create theme
-      const postRes = await fetch(`${baseUrl}/api/v1/themes`, {
+      const postRes = await fetch(`${EDITOR_API_BASE_URL}/api/v1/themes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -456,8 +433,7 @@ async function main() {
   );
 
   // Output editor URL
-  const editorServerUrl =
-    process.env.NEXT_PUBLIC_EDITOR_SERVER_URL || "http://localhost:3000";
+  const editorServerUrl = "http://localhost:4344";
   console.log(`\n🎯 Editor URL: ${editorServerUrl}/editor/${visualEditorId}`);
 }
 
