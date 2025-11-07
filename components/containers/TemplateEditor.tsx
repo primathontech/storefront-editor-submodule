@@ -159,6 +159,13 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     return `${links}\n${styles}`;
   }, []);
 
+  // Copy font classes from root HTML to iframe HTML
+  // Stylesheets are already copied via headContent, we just need the classes
+  const rootHtmlClassName = useMemo(() => {
+    if (typeof document === "undefined") return "";
+    return document.documentElement.className || "";
+  }, []);
+
   // ✅ Move all hooks before conditional returns to follow Rules of Hooks
   const widgetInjector = new WidgetInjector();
   const layoutRenderer = new LayoutRenderer((section, children, styles) => (
@@ -274,7 +281,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
         <Frame
           style={RESPONSIVE_FRAME_STYLE[device]}
           initialContent={`<!DOCTYPE html>
-            <html>
+            <html${rootHtmlClassName ? ` class="${rootHtmlClassName}"` : ""}>
               <head>
                 <meta name='viewport' content='width=device-width, initial-scale=1'>
                 ${headContent}
