@@ -46,7 +46,8 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
 
     // Find the element with matching sectionKey
     const elements = document.querySelectorAll("[data-section-key]");
-    for (const element of elements) {
+    for (let i = 0; i < elements.length; i++) {
+      const element = elements[i];
       const sectionKey = element.getAttribute("data-section-key");
       if (
         sectionKey === focusedPath ||
