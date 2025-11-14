@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { Input } from "@/ui/atomic";
 import { RichTextInput } from "../ui/RichTextInput";
+import { ArrayInput } from "../ui/ArrayInput";
+import { ObjectArrayInput } from "../ui/ObjectArrayInput";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
 import { useDualTranslationStore } from "../../stores/dualTranslationStore";
 import { Locale } from "@/lib/i18n/types";
@@ -38,23 +40,79 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
     getTranslations(themeId, templateMeta.id, language);
   }, [templateMeta?.id, themeId, language]);
 
-  const handleChange = (path: string[], value: string) => {
+  // Scroll focused input into view
+  useEffect(() => {
+    if (!focusedPath) return;
+
+    // Find the element with matching sectionKey
+    const elements = document.querySelectorAll("[data-section-key]");
+    for (const element of elements) {
+      const sectionKey = element.getAttribute("data-section-key");
+      if (
+        sectionKey === focusedPath ||
+        sectionKey?.endsWith(`.${focusedPath}`)
+      ) {
+        element.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        break;
+      }
+    }
+  }, [focusedPath]);
+
+  const handleChange = (path: string[], value: any) => {
     updateTranslation(path, value);
   };
 
-  // Flatten nested object into array of { path, value, key } objects
+  // Flatten nested object into array of { path, value, key, type? } objects
+  // Arrays are returned as special entries with type information
   const flattenTranslations = (
     obj: any,
     path: string[] = []
-  ): Array<{ path: string[]; value: any; key: string }> => {
+  ): Array<{
+    path: string[];
+    value: any;
+    key: string;
+    type?: "array" | "objectArray";
+    fields?: string[];
+  }> => {
     if (!obj || typeof obj !== "object") return [];
 
-    const result: Array<{ path: string[]; value: any; key: string }> = [];
+    const result: Array<{
+      path: string[];
+      value: any;
+      key: string;
+      type?: "array" | "objectArray";
+      fields?: string[];
+    }> = [];
 
     Object.entries(obj).forEach(([key, value]) => {
       const currentPath = [...path, key];
 
-      if (typeof value === "object" && value !== null) {
+      if (Array.isArray(value)) {
+        // Detect array type
+        if (
+          value.length > 0 &&
+          typeof value[0] === "object" &&
+          !Array.isArray(value[0])
+        ) {
+          // Object array - infer fields from first item
+          const fields = Object.keys(value[0]);
+          result.push({
+            path: currentPath,
+            value,
+            key,
+            type: "objectArray",
+            fields,
+          });
+        } else {
+          // Simple array
+          result.push({
+            path: currentPath,
+            value,
+            key,
+            type: "array",
+          });
+        }
+      } else if (typeof value === "object" && value !== null) {
         // Recursively flatten nested objects
         result.push(...flattenTranslations(value, currentPath));
       } else {
@@ -69,21 +127,80 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   const renderFlatInputs = () => {
     if (!templateTranslations) return null;
 
+    const templateData = translations[templateMeta.id];
+    if (!templateData) return null;
+
     const flatTranslations = flattenTranslations({
-      [templateMeta.id]: translations[templateMeta.id],
+      [templateMeta.id]: templateData,
     });
 
-    return flatTranslations.map(({ path, value, key }, index) => {
+    return flatTranslations.map(({ path, value, key, type, fields }) => {
       const sectionKey = path.join(".");
       const isImageUrl = key.endsWith("__image");
       const isRichText = key.endsWith("__rich");
 
+      // Check if focusedPath matches sectionKey (sectionKey includes template ID prefix)
+      const isFocused =
+        focusedPath === sectionKey || sectionKey.endsWith(`.${focusedPath}`);
+
       // Create a human-readable label from the path
       const label = path.slice(-1)[0] || key;
 
+      // Handle array types
+      if (type === "array") {
+        const arrayValue = Array.isArray(value) ? value : [];
+        return (
+          <div
+            key={sectionKey}
+            data-section-key={sectionKey}
+            className="mb-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+            style={{
+              boxShadow: isFocused ? "0 0 0 2px #3b82f6" : undefined,
+            }}
+            onFocus={() => setFocusedPath(sectionKey)}
+            onBlur={() => setFocusedPath(null)}
+            tabIndex={0}
+          >
+            <ArrayInput
+              value={arrayValue}
+              onChange={(newValue) => handleChange(path, newValue)}
+              showControls={true}
+            />
+          </div>
+        );
+      }
+
+      if (type === "objectArray") {
+        const arrayValue = Array.isArray(value) ? value : [];
+        const inferredFields =
+          fields || (arrayValue.length > 0 ? Object.keys(arrayValue[0]) : []);
+        return (
+          <div
+            key={sectionKey}
+            data-section-key={sectionKey}
+            className="mb-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+            style={{
+              boxShadow: isFocused ? "0 0 0 2px #3b82f6" : undefined,
+            }}
+            onFocus={() => setFocusedPath(sectionKey)}
+            onBlur={() => setFocusedPath(null)}
+            tabIndex={0}
+          >
+            <ObjectArrayInput
+              value={arrayValue}
+              onChange={(newValue) => handleChange(path, newValue)}
+              fields={inferredFields}
+              showControls={true}
+            />
+          </div>
+        );
+      }
+
+      // Handle regular flat inputs
       return (
         <div
           key={sectionKey}
+          data-section-key={sectionKey}
           className="mb-2 bg-white rounded-lg shadow-sm border border-gray-200 p-2 hover:shadow-md transition-shadow"
         >
           <div className="flex items-center gap-4">
@@ -104,10 +221,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
                     height: "1.5rem",
                     padding: "1rem",
                     fontSize: "1rem",
-                    boxShadow:
-                      focusedPath === sectionKey
-                        ? "0 0 0 2px #3b82f6"
-                        : undefined,
+                    boxShadow: isFocused ? "0 0 0 2px #3b82f6" : undefined,
                   }}
                   value={String(value)}
                   onChange={(e) => handleChange(path, e.target.value)}
@@ -184,7 +298,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
             </div>
           </div>
 
-          <div className="flex-1 overflow-auto pr-2">
+          <div className="flex-1 overflow-auto pr-2 pl-2">
             {translations && Object.keys(translations).length === 0 && (
               <div className="text-gray-400 text-center py-8">
                 No translations found.
