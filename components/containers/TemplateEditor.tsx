@@ -165,6 +165,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     if (typeof document === "undefined") return "";
     return document.documentElement.className || "";
   }, []);
+  const editorPreviewClass = "editor-preview";
 
   // ✅ Move all hooks before conditional returns to follow Rules of Hooks
   const widgetInjector = new WidgetInjector();
@@ -290,7 +291,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
                   #website-canvas{}
                 </style>
               </head>
-              <body>
+              <body class="${editorPreviewClass}">
                 <div id='mountHere'></div>
               </body>
             </html>`}
