@@ -279,7 +279,7 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
                 value={actualFaqItems}
                 onChange={handleFaqTranslationChange}
                 disabled={fieldDisabled}
-                showControls={true}
+                showControls={false}
               />
             );
           }
@@ -316,7 +316,7 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
               value={faqDisplayItems}
               onChange={handleFaqChange}
               disabled={fieldDisabled}
-              showControls={true}
+              showControls={false}
             />
           );
 
@@ -363,7 +363,7 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
                 error={fieldError}
                 helperText={fieldHelperText}
                 fields={fieldSchema.fields || []}
-                showControls={true}
+                showControls={false}
               />
             );
           } else {
@@ -405,7 +405,7 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
                 error={fieldError}
                 helperText={fieldHelperText}
                 fields={fields}
-                showControls={true}
+                showControls={false}
               />
             );
           }
@@ -429,7 +429,7 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
                 disabled={fieldDisabled}
                 error={fieldError}
                 helperText={fieldHelperText}
-                showControls={true}
+                showControls={false}
               />
             );
           }
@@ -458,7 +458,7 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
               disabled={fieldDisabled}
               error={fieldError}
               helperText={fieldHelperText}
-              showControls={true}
+              showControls={false}
             />
           );
 
