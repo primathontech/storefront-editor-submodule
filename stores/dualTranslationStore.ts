@@ -39,11 +39,7 @@ function flattenObject(obj: any, path: string[] = []): string[][] {
     const currentPath = [...path, key];
 
     if (typeof value === "object" && value !== null) {
-      if (Array.isArray(value)) {
-        result.push(currentPath);
-      } else {
-        result.push(...flattenObject(value, currentPath));
-      }
+      result.push(...flattenObject(value, currentPath));
     } else {
       result.push(currentPath);
     }
