@@ -13,6 +13,13 @@ interface EditorHeader2Props {
   isSaving?: boolean;
 }
 
+// Feature flag: only fetch translations from API when explicitly enabled
+const isEditorChangesEnabled = (): boolean => {
+  const flag =
+    typeof process !== "undefined" && process.env?.ENABLE_EDITOR_CHANGES;
+  return String(flag).toLowerCase() === "true";
+};
+
 const EditorHeader2: React.FC<EditorHeader2Props> = ({
   theme,
   selectedTemplateId,
@@ -61,10 +68,18 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
     }
   };
 
+  const editorChangesEnabled = isEditorChangesEnabled();
   const isSaveDisabled =
+    !editorChangesEnabled ||
     isSaving ||
     isTranslationSaving ||
     (selectedTemplate?.isDynamic ? false : !hasUnsavedChanges);
+
+  const saveButtonTitle = !editorChangesEnabled
+    ? "Enable editor changes to allow saving"
+    : !selectedTemplate?.isDynamic && !hasUnsavedChanges
+      ? "Make some changes before saving"
+      : "Save changes";
 
   const DEVICES = ["desktop", "mobile", "fullscreen"] as const;
   const MODES = ["edit", "preview"] as const;
@@ -118,7 +133,7 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
               ? "bg-gray-400 text-white cursor-not-allowed"
               : "bg-green-600 text-white hover:bg-green-700"
           }`}
-          title="Save changes"
+          title={saveButtonTitle}
         >
           {isSaving || isTranslationSaving ? "Saving..." : "Save"}
         </button>
