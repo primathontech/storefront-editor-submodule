@@ -1,9 +1,10 @@
 // components/BuilderToolbar.js
 "use client";
 
+import { useEffect, useState } from "react";
 import { DynamicForm } from "./DynamicForm";
-import { SimpleSelect } from "./SimpleSelect";
 import { Input } from "./Input";
+import { SimpleSelect } from "./SimpleSelect";
 import {
   Sidebar,
   SidebarHeader,
@@ -32,8 +33,9 @@ import { CSS } from "@dnd-kit/utilities";
 import { useEditorState } from "../../stores/useEditorState";
 import { sectionRegistry } from "@/cms/schemas/section-registry";
 import { widgetRegistry } from "@/cms/schemas/widget-registry";
-import { useEffect } from "react";
 import { TranslationService } from "@/lib/i18n/translation-service";
+import Dialog from "./Dialog";
+import { availableSectionsRegistry } from "@/registries/available-sections-registry";
 
 interface BuilderToolbarProps {
   pageConfig: any;
@@ -64,8 +66,7 @@ export default function BuilderToolbar({
     setSelectedSection,
     setSelectedWidget,
     setShowSettingsDrawer,
-    addSection,
-    addWidget,
+    addSectionFromLibrary,
     updateSection,
     updateWidget,
     removeSection,
@@ -74,6 +75,9 @@ export default function BuilderToolbar({
     setPageConfig,
     setExpandedSections,
   } = useEditorState();
+
+  const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
+  const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
 
   // Get theme-specific widget registry
   const { getRouteHandleKey, getRouteHandle } = useEditorState.getState();
@@ -100,32 +104,23 @@ export default function BuilderToolbar({
     return <div className="text-gray-500 p-4">No template loaded.</div>;
   }
 
-  // Helper function to create section options
-  const getSectionOptions = () => {
-    const options = Object.entries(sectionRegistry).map(([key, section]) => ({
+  // Helper function to create options from available sections registry
+  const getAvailableSectionOptions = () => {
+    const entries = availableSectionsRegistry.availableSections || {};
+    return Object.entries(entries).map(([key, section]: [string, any]) => ({
       value: key,
       label: section.name,
     }));
-    return options;
   };
 
-  // Helper function to create widget options for a section
-  const getWidgetOptions = (sectionType: string) => {
-    const sectionSchema = sectionRegistry[sectionType];
-    const options =
-      sectionSchema?.allowedWidgets?.map((widgetType: string) => {
-        const widget = widgetRegistry[widgetType];
-        return {
-          value: widgetType,
-          label: widget ? widget.name : widgetType,
-        };
-      }) || [];
-
-    return options;
+  const handleCloseAddSectionModal = () => {
+    setIsAddSectionModalOpen(false);
+    setInsertAfterIndex(null);
   };
 
-  const handleAddSection = (sectionKey: string, insertIndex?: number) => {
-    addSection(sectionKey, insertIndex);
+  const handleAddSectionFromLibrary = (libraryKey: string) => {
+    addSectionFromLibrary(libraryKey, insertAfterIndex);
+    handleCloseAddSectionModal();
   };
 
   const handleSectionSettingChange = (key: string, value: any) => {
@@ -316,7 +311,9 @@ export default function BuilderToolbar({
                 label: locale.toUpperCase(),
               }))}
               value={currentLocale}
-              onSelect={(value) => value && onLocaleChange(value)}
+              onSelect={(value: string | null) =>
+                value && onLocaleChange(value)
+              }
               placeholder="Select Language"
               size="sm"
               className="w-full"
@@ -325,28 +322,25 @@ export default function BuilderToolbar({
         )}
 
         <SidebarContent className="px-3">
-          {/* Add Section Button at Top */}
-          {/* <SidebarGroup>
-            <SidebarGroupContent>
-              <SimpleSelect
-                options={getSectionOptions()}
-                onSelect={(value) => value && handleAddSection(value)}
-                placeholder="➕ Add Section"
-                size="md"
-                className="w-full"
-              />
-            </SidebarGroupContent>
-          </SidebarGroup> */}
-
           {/* Sections List with DnD */}
           <SidebarScrollArea className="px-1">
             {pageConfig.sections.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <div className="text-3xl mb-3 opacity-50">📄</div>
                 <p className="text-sm font-medium mb-1">No sections yet</p>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-400 mb-4">
                   Add a section to get started
                 </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInsertAfterIndex(null);
+                    setIsAddSectionModalOpen(true);
+                  }}
+                  className="px-4 py-2 rounded text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700"
+                >
+                  Add section
+                </button>
               </div>
             ) : (
               <SidebarGroup>
@@ -361,35 +355,36 @@ export default function BuilderToolbar({
                       strategy={verticalListSortingStrategy}
                     >
                       <SidebarMenu>
-                        {pageConfig.sections.map((section: any) => {
-                          const isExpanded = expandedSections.has(section.id);
-                          const isSelected = selectedSectionId === section.id;
-                          const sectionSchema = sectionRegistry[section.type];
-                          return (
-                            <SortableSection
-                              key={section.id}
-                              section={section}
-                              idx={0}
-                            >
-                              {/* Section Header */}
-                              <SidebarMenuItem
-                                selected={isSelected}
-                                // onClick={() => handleSectionSelect(section.id)}
-                                className="group hover:!bg-transparent cursor-default"
+                        {pageConfig.sections.map(
+                          (section: any, index: number) => {
+                            const isExpanded = expandedSections.has(section.id);
+                            const isSelected = selectedSectionId === section.id;
+                            const sectionSchema = sectionRegistry[section.type];
+                            return (
+                              <SortableSection
+                                key={section.id}
+                                section={section}
+                                idx={index}
                               >
-                                {/* <SidebarMenuButton> */}
-                                <div className="flex-1 text-left min-w-0">
-                                  <span className="text-sm font-medium truncate">
-                                    {sectionSchema?.name || section.type}
-                                  </span>
-                                  {section.widgets.length > 0 && (
-                                    <span className="text-xs text-gray-500 ml-2">
-                                      ({section.widgets.length})
+                                {/* Section Header */}
+                                <SidebarMenuItem
+                                  selected={isSelected}
+                                  // onClick={() => handleSectionSelect(section.id)}
+                                  className="group hover:!bg-transparent cursor-default"
+                                >
+                                  {/* <SidebarMenuButton> */}
+                                  <div className="flex-1 text-left min-w-0">
+                                    <span className="text-sm font-medium truncate">
+                                      {sectionSchema?.name || section.type}
                                     </span>
-                                  )}
-                                </div>
-                                {/* Remove Section Button */}
-                                {/* <button
+                                    {section.widgets.length > 0 && (
+                                      <span className="text-xs text-gray-500 ml-2">
+                                        ({section.widgets.length})
+                                      </span>
+                                    )}
+                                  </div>
+                                  {/* Remove Section Button */}
+                                  {/* <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       removeSection(section.id);
@@ -411,43 +406,32 @@ export default function BuilderToolbar({
                                       />
                                     </svg>
                                   </button> */}
-                                {/* </SidebarMenuButton> */}
-                              </SidebarMenuItem>
+                                  {/* </SidebarMenuButton> */}
+                                </SidebarMenuItem>
 
-                              {/* Add Section Button */}
-                              {/* <div className="flex justify-center px-2">
-                                <SimpleSelect
-                                  options={getSectionOptions()}
-                                  onSelect={(value) =>
-                                    value && handleAddSection(value, 0)
-                                  }
-                                  placeholder="➕"
-                                  size="sm"
-                                  className="w-24"
-                                />
-                              </div> */}
-
-                              {/* Widgets List */}
-                              {section.widgets.length > 0 && (
-                                <div className="ml-4 space-y-1 border-l border-gray-200 pl-3">
-                                  {section.widgets.map((widget: any) => (
-                                    <SidebarMenuItem
-                                      key={widget.id}
-                                      selected={selectedWidgetId === widget.id}
-                                      onClick={() =>
-                                        handleWidgetSelect(
-                                          widget.id,
-                                          section.id
-                                        )
-                                      }
-                                      className="flex items-center"
-                                    >
-                                      <SidebarMenuButton>
-                                        <span className="text-xs font-medium">
-                                          {widget.name || widget.type}
-                                        </span>
-                                        {/* Remove Widget Button */}
-                                        {/* <button
+                                {/* Widgets List */}
+                                {section.widgets.length > 0 && (
+                                  <div className="ml-4 space-y-1 border-l border-gray-200 pl-3">
+                                    {section.widgets.map((widget: any) => (
+                                      <SidebarMenuItem
+                                        key={widget.id}
+                                        selected={
+                                          selectedWidgetId === widget.id
+                                        }
+                                        onClick={() =>
+                                          handleWidgetSelect(
+                                            widget.id,
+                                            section.id
+                                          )
+                                        }
+                                        className="flex items-center"
+                                      >
+                                        <SidebarMenuButton>
+                                          <span className="text-xs font-medium">
+                                            {widget.name || widget.type}
+                                          </span>
+                                          {/* Remove Widget Button */}
+                                          {/* <button
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             removeWidget(
@@ -472,29 +456,32 @@ export default function BuilderToolbar({
                                             />
                                           </svg>
                                         </button> */}
-                                      </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                  ))}
-                                </div>
-                              )}
+                                        </SidebarMenuButton>
+                                      </SidebarMenuItem>
+                                    ))}
+                                  </div>
+                                )}
 
-                              {/* Add Widget Button */}
-                              {/* <div className="pt-1">
-                                <SimpleSelect
-                                  options={getWidgetOptions(section.type)}
-                                  onSelect={(value) => {
-                                    if (value) {
-                                      addWidget(section.id, value);
-                                    }
-                                  }}
-                                  placeholder="➕ Add Widget"
-                                  size="sm"
-                                  className="w-full"
-                                />
-                              </div> */}
-                            </SortableSection>
-                          );
-                        })}
+                                {/* Add Section Button */}
+                                <div className="flex justify-center px-2 py-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setInsertAfterIndex(index);
+                                      setIsAddSectionModalOpen(true);
+                                    }}
+                                    className="w-full justify-center gap-1 text-[11px] font-medium text-gray-600 px-3 py-1.5 rounded border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors flex items-center"
+                                  >
+                                    <span className="text-sm leading-none">
+                                      ＋
+                                    </span>
+                                    <span>Add section title</span>
+                                  </button>
+                                </div>
+                              </SortableSection>
+                            );
+                          }
+                        )}
                       </SidebarMenu>
                     </SortableContext>
                   </DndContext>
@@ -587,6 +574,50 @@ export default function BuilderToolbar({
           </div>
         </div>
       )}
+      {/* Add Section Modal */}
+      <Dialog
+        open={isAddSectionModalOpen}
+        onClose={handleCloseAddSectionModal}
+        title="Add section"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={handleCloseAddSectionModal}
+              className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleCloseAddSectionModal}
+              className="px-4 py-2 rounded text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700"
+            >
+              Done
+            </button>
+          </>
+        }
+      >
+        <p className="mb-3 text-xs text-gray-500">
+          Choose a section to add to your page. This is a visual preview only;
+          selection logic will be wired separately.
+        </p>
+        <div className="space-y-1">
+          {getAvailableSectionOptions().map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleAddSectionFromLibrary(option.value)}
+              className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-md border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+            >
+              <span className="truncate">{option.label}</span>
+              <span className="text-[11px] text-gray-400 uppercase tracking-wide">
+                Section
+              </span>
+            </button>
+          ))}
+        </div>
+      </Dialog>
     </div>
   );
 }

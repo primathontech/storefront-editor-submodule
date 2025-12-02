@@ -3,6 +3,7 @@ import { devtools } from "zustand/middleware";
 import { nanoid } from "nanoid";
 import { sectionRegistry } from "@/cms/schemas/section-registry";
 import { widgetRegistry } from "@/cms/schemas/widget-registry";
+import { availableSectionsRegistry } from "@/registries/available-sections-registry";
 
 // Widget to Data Source mapping
 const WIDGET_DATA_SOURCE_MAP: Record<string, string> = {
@@ -70,11 +71,14 @@ export interface EditorState {
   setDevice: (device: "desktop" | "mobile" | "fullscreen") => void;
 
   // Section Actions
-  addSection: (sectionKey: string, insertIndex?: number) => void;
+  addSection: (section: any, insertIndex?: number) => void;
+  addSectionFromLibrary: (
+    libraryKey: string,
+    insertAfterIndex?: number | null
+  ) => void;
   updateSection: (sectionId: string, updates: any) => void;
   updateSectionSettings: (sectionId: string, key: string, value: any) => void;
   // Widget Actions
-  addWidget: (sectionId: string, widgetKey: string) => void;
   updateWidget: (sectionId: string, widgetId: string, updates: any) => void;
   updateWidgetSettings: (
     sectionId: string,
@@ -194,54 +198,60 @@ export const useEditorState = create<EditorState>()(
       setDevice: (device) => set({ device }),
 
       // Section Actions
-      addSection: (sectionKey, insertIndex) => {
-        console.log("Adding section:", sectionKey, "at index:", insertIndex);
-        const sectionSchema = sectionRegistry[sectionKey];
-        if (!sectionSchema) {
-          console.error("Section schema not found for:", sectionKey);
-          console.log("Available sections:", Object.keys(sectionRegistry));
-          return;
-        }
-
-        const newSection = {
-          id: nanoid(),
-          type: sectionKey,
-          settings: Object.fromEntries(
-            Object.entries(sectionSchema.settingsSchema).map(([k, v]) => [
-              k,
-              v.default,
-            ])
-          ),
-          widgets: [],
-        };
-
+      addSection: (section, insertIndex) => {
         set((state) => {
-          console.log(
-            "Current sections before adding:",
-            state.pageConfig?.sections.length
-          );
           const sections = [...(state.pageConfig?.sections || [])];
           const newIndex =
             insertIndex !== undefined ? insertIndex : sections.length;
+          sections.splice(newIndex, 0, section);
 
-          if (insertIndex !== undefined) {
-            sections.splice(insertIndex, 0, newSection);
-          } else {
-            sections.push(newSection);
-          }
-
-          // Update expanded sections to include the new section
           const newExpandedSections = new Set(state.expandedSections);
-          newExpandedSections.add(newSection.id);
+          newExpandedSections.add(section.id);
 
           return {
             pageConfig: { ...state.pageConfig, sections },
-            selectedSectionId: newSection.id,
-            selectedWidgetId: null,
+            selectedSectionId: section.id,
+            selectedWidgetId: section.widgets?.[0]?.id ?? null,
             expandedSections: newExpandedSections,
             showSettingsDrawer: true,
           };
         });
+      },
+
+      addSectionFromLibrary: (libraryKey, insertAfterIndex) => {
+        const entries = availableSectionsRegistry.availableSections || {};
+        const existingBlock = (entries as any)[libraryKey];
+        if (!existingBlock) {
+          console.error("Available section not found for key:", libraryKey);
+          return;
+        }
+
+        const uniqueId = nanoid(6);
+        const sectionId = `${existingBlock.id}-${uniqueId}`;
+        const widgets =
+          (existingBlock.widgets || []).map((widget: any) => ({
+            ...widget,
+            id: `${widget.id}-${uniqueId}`,
+          })) || [];
+
+        const sectionForPage = {
+          ...existingBlock,
+          id: sectionId,
+          widgets,
+        };
+
+        const state = get();
+        const currentLength = state.pageConfig?.sections?.length || 0;
+
+        // Translate insertAfterIndex into concrete insertIndex
+        const insertIndex =
+          insertAfterIndex !== null && insertAfterIndex !== undefined
+            ? Math.min(insertAfterIndex + 1, currentLength)
+            : currentLength === 0
+              ? 0
+              : undefined;
+
+        state.addSection(sectionForPage, insertIndex);
       },
 
       updateSection: (sectionId, updates) => {
@@ -296,83 +306,6 @@ export const useEditorState = create<EditorState>()(
       },
 
       // Widget Actions
-      addWidget: (sectionId, widgetKey) => {
-        console.log("Adding widget:", widgetKey, "to section:", sectionId);
-        const widgetSchema = widgetRegistry[widgetKey];
-        if (!widgetSchema) {
-          console.error("Widget schema not found for:", widgetKey);
-          return;
-        }
-
-        set((state) => {
-          // Determine data source for this widget
-          let dataSourceKey: string | null = null;
-          let updatedDataSources = { ...(state.pageConfig?.dataSources || {}) };
-
-          // First, try to find existing compatible data source
-          const existingDataSource = findCompatibleDataSource(
-            state.pageConfig || {},
-            widgetKey
-          );
-          if (existingDataSource) {
-            dataSourceKey = existingDataSource;
-            console.log("Reusing existing data source:", existingDataSource);
-          } else {
-            // Create new data source
-            const requiredType = WIDGET_DATA_SOURCE_MAP[widgetKey];
-            if (requiredType) {
-              dataSourceKey = generateDataSourceKey(widgetKey);
-              updatedDataSources[dataSourceKey] = {
-                type: requiredType,
-                params: {},
-                required: false,
-              };
-              console.log(
-                "Created new data source:",
-                dataSourceKey,
-                "of type:",
-                requiredType
-              );
-            }
-          }
-
-          const newWidget = {
-            id: nanoid(),
-            type: widgetKey,
-            name: widgetSchema.name || widgetKey,
-            dataSourceKey,
-            settings: Object.fromEntries(
-              Object.entries(widgetSchema.settingsSchema).map(([k, v]) => [
-                k,
-                v.default,
-              ])
-            ),
-          };
-
-          console.log("New widget with data source:", newWidget);
-
-          const sections = [...(state.pageConfig?.sections || [])];
-          const sectionIndex = sections.findIndex((s) => s.id === sectionId);
-          if (sectionIndex === -1) {
-            console.error("Section not found with ID:", sectionId);
-            return {};
-          }
-          const section = { ...sections[sectionIndex] };
-          section.widgets = [...section.widgets, newWidget];
-          sections[sectionIndex] = section;
-
-          return {
-            pageConfig: {
-              ...state.pageConfig,
-              sections,
-              dataSources: updatedDataSources,
-            },
-            selectedWidgetId: newWidget.id,
-            showSettingsDrawer: true,
-          };
-        });
-      },
-
       updateWidget: (sectionId, widgetId, updates) => {
         set((state) => {
           const sections = [...(state.pageConfig?.sections || [])];
