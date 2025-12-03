@@ -38,6 +38,8 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     setPageConfig,
     pageData,
     setPageData,
+    pageDataStale,
+    setPageDataStale,
     setSelectedSection,
     setSelectedWidget,
     setShowSettingsDrawer,
@@ -141,6 +143,45 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
       isCancelled = true;
     };
   }, [templateMeta?.id, themeId, routeContext]);
+
+  // Refetch data when editor marks page data as stale (e.g., new dynamic section)
+  useEffect(() => {
+    const refetchData = async () => {
+      if (!pageConfig || !themeId || !routeContext || !pageDataStale) return;
+
+      let isCancelled = false;
+      setIsLoadingData(true);
+
+      try {
+        const merchantNameFromAPI = await api.editor.getMerchantName();
+        if (isCancelled) return;
+
+        const realData = await api.editor.fetchEditorData({
+          pageConfig,
+          routeContext,
+          merchantName: merchantNameFromAPI,
+        });
+        if (isCancelled) return;
+        setPageData(realData);
+      } catch (err) {
+        console.error("Error refetching editor data after config change:", err);
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingData(false);
+          setPageDataStale(false);
+        }
+      }
+    };
+
+    refetchData();
+  }, [
+    pageConfig,
+    routeContext,
+    themeId,
+    pageDataStale,
+    setPageData,
+    setPageDataStale,
+  ]);
 
   // Collect parent stylesheets and style tags for iframe
   const headContent = useMemo(() => {

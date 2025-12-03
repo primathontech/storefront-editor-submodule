@@ -43,6 +43,7 @@ export interface EditorState {
   pageData: any | null;
   themeId: string; // Add themeId to state
   routeContext: any; // Add routeContext to state
+  pageDataStale: boolean;
 
   // UI State
   selectedSectionId: string | null;
@@ -60,6 +61,7 @@ export interface EditorState {
   updateRouteHandle: (handle: string) => void; // Add updateRouteHandle action
 
   setPageData: (data: any) => void;
+  setPageDataStale: (stale: boolean) => void;
   setExpandedSections: (expandedSections: Set<string>) => void;
 
   // Selection Actions
@@ -71,7 +73,11 @@ export interface EditorState {
   setDevice: (device: "desktop" | "mobile" | "fullscreen") => void;
 
   // Section Actions
-  addSection: (section: any, insertIndex?: number) => void;
+  addSection: (
+    section: any,
+    insertIndex?: number,
+    extraDataSources?: Record<string, any>
+  ) => void;
   addSectionFromLibrary: (
     libraryKey: string,
     insertAfterIndex?: number | null
@@ -112,6 +118,7 @@ export const useEditorState = create<EditorState>()(
       // Initial State - No default template
       pageConfig: null,
       pageData: null,
+      pageDataStale: false,
       themeId: null, // Default theme
       routeContext: null, // Default route context
       selectedSectionId: null,
@@ -135,7 +142,11 @@ export const useEditorState = create<EditorState>()(
       },
 
       setPageData: (data) => {
-        set({ pageData: data });
+        set({ pageData: data, pageDataStale: false });
+      },
+
+      setPageDataStale: (stale) => {
+        set({ pageDataStale: stale });
       },
 
       setThemeId: (themeId) => {
@@ -198,18 +209,24 @@ export const useEditorState = create<EditorState>()(
       setDevice: (device) => set({ device }),
 
       // Section Actions
-      addSection: (section, insertIndex) => {
+      addSection: (section, insertIndex, extraDataSources) => {
         set((state) => {
-          const sections = [...(state.pageConfig?.sections || [])];
+          const prevPageConfig = state.pageConfig || {};
+          const sections = [...(prevPageConfig.sections || [])];
           const newIndex =
             insertIndex !== undefined ? insertIndex : sections.length;
           sections.splice(newIndex, 0, section);
+
+          const dataSources = {
+            ...(prevPageConfig.dataSources || {}),
+            ...(extraDataSources || {}),
+          };
 
           const newExpandedSections = new Set(state.expandedSections);
           newExpandedSections.add(section.id);
 
           return {
-            pageConfig: { ...state.pageConfig, sections },
+            pageConfig: { ...prevPageConfig, sections, dataSources },
             selectedSectionId: section.id,
             selectedWidgetId: section.widgets?.[0]?.id ?? null,
             expandedSections: newExpandedSections,
@@ -234,10 +251,36 @@ export const useEditorState = create<EditorState>()(
             id: `${widget.id}-${uniqueId}`,
           })) || [];
 
+        const extraDataSources: Record<string, any> = {};
+
         const sectionForPage = {
           ...existingBlock,
           id: sectionId,
-          widgets,
+          widgets: widgets.map((widget: any) => {
+            if (widget.dataSourceTemplate) {
+              const baseKey = widget.id || widget.name || "dataSource";
+              const safeBase = String(baseKey)
+                .toLowerCase()
+                .replace(/[^a-z0-9_]/g, "_");
+              const dataSourceKey = `${safeBase}_${uniqueId}`;
+
+              extraDataSources[dataSourceKey] = {
+                type: widget.dataSourceTemplate.type,
+                params: widget.dataSourceTemplate.params || {},
+                required:
+                  widget.dataSourceTemplate.required === undefined
+                    ? false
+                    : widget.dataSourceTemplate.required,
+              };
+
+              return {
+                ...widget,
+                dataSourceKey,
+              };
+            }
+
+            return widget;
+          }),
         };
 
         const state = get();
@@ -251,7 +294,8 @@ export const useEditorState = create<EditorState>()(
               ? 0
               : undefined;
 
-        state.addSection(sectionForPage, insertIndex);
+        state.addSection(sectionForPage, insertIndex, extraDataSources);
+        state.setPageDataStale(true);
       },
 
       updateSection: (sectionId, updates) => {
