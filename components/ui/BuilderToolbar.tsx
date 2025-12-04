@@ -608,7 +608,7 @@ export default function BuilderToolbar({
                                     <span className="text-sm leading-none">
                                       ＋
                                     </span>
-                                    <span>Add section title</span>
+                                    <span>Add section</span>
                                   </button>
                                 </div>
                               </SortableSection>

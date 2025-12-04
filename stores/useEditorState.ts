@@ -40,6 +40,7 @@ const findCompatibleDataSource = (
 export interface EditorState {
   // Page Configuration
   pageConfig: any | null;
+  pendingPageConfig: any | null;
   pageData: any | null;
   themeId: string; // Add themeId to state
   routeContext: any; // Add routeContext to state
@@ -55,6 +56,7 @@ export interface EditorState {
 
   // Actions
   setPageConfig: (config: any) => void;
+  setPendingPageConfig: (config: any | null) => void;
   updatePageConfig: (updater: (prev: any) => any) => void;
   setThemeId: (themeId: string) => void; // Add setThemeId action
   setRouteContext: (context: any) => void; // Add setRouteContext action
@@ -117,6 +119,7 @@ export const useEditorState = create<EditorState>()(
     (set, get) => ({
       // Initial State - No default template
       pageConfig: null,
+      pendingPageConfig: null,
       pageData: null,
       pageDataStale: false,
       themeId: null, // Default theme
@@ -131,6 +134,10 @@ export const useEditorState = create<EditorState>()(
       // Page Configuration Actions
       setPageConfig: (config) => {
         set({ pageConfig: config });
+      },
+
+      setPendingPageConfig: (config) => {
+        set({ pendingPageConfig: config });
       },
 
       setExpandedSections: (expandedSections: Set<string>) => {
@@ -284,9 +291,10 @@ export const useEditorState = create<EditorState>()(
         };
 
         const state = get();
-        const currentLength = state.pageConfig?.sections?.length || 0;
+        const baseConfig = state.pendingPageConfig || state.pageConfig || {};
+        const sections = [...(baseConfig.sections || [])];
 
-        // Translate insertAfterIndex into concrete insertIndex
+        const currentLength = sections.length;
         const insertIndex =
           insertAfterIndex !== null && insertAfterIndex !== undefined
             ? Math.min(insertAfterIndex + 1, currentLength)
@@ -294,8 +302,21 @@ export const useEditorState = create<EditorState>()(
               ? 0
               : undefined;
 
-        state.addSection(sectionForPage, insertIndex, extraDataSources);
-        state.setPageDataStale(true);
+        const targetIndex =
+          insertIndex !== undefined ? insertIndex : sections.length;
+        sections.splice(targetIndex, 0, sectionForPage);
+
+        const dataSources = {
+          ...(baseConfig.dataSources || {}),
+          ...(extraDataSources || {}),
+        };
+
+        const nextConfig = { ...baseConfig, sections, dataSources };
+
+        set({
+          pendingPageConfig: nextConfig,
+          pageDataStale: true,
+        });
       },
 
       updateSection: (sectionId, updates) => {
@@ -333,7 +354,8 @@ export const useEditorState = create<EditorState>()(
       // Remove Section
       removeSection: (sectionId) => {
         set((state) => {
-          const sections = [...(state.pageConfig?.sections || [])];
+          const baseConfig = state.pendingPageConfig || state.pageConfig || {};
+          const sections = [...(baseConfig.sections || [])];
           const sectionIndex = sections.findIndex((s) => s.id === sectionId);
           if (sectionIndex === -1) {
             console.error("Section not found with ID:", sectionId);
@@ -359,7 +381,7 @@ export const useEditorState = create<EditorState>()(
           });
 
           // Remove unused data sources
-          const dataSources = { ...(state.pageConfig?.dataSources || {}) };
+          const dataSources = { ...(baseConfig.dataSources || {}) };
           let hasRemovedDataSources = false;
           dataSourceKeys.forEach((key: string) => {
             if (!usedDataSourceKeys.has(key)) {
@@ -371,16 +393,14 @@ export const useEditorState = create<EditorState>()(
           // Remove the section
           sections.splice(sectionIndex, 1);
 
+          const nextConfig = { ...baseConfig, sections, dataSources };
+
           return {
-            pageConfig: {
-              ...state.pageConfig,
-              sections,
-              dataSources,
-            },
+            pendingPageConfig: nextConfig,
             selectedSectionId: null,
             selectedWidgetId: null,
             showSettingsDrawer: false,
-            pageDataStale: hasRemovedDataSources,
+            pageDataStale: true,
           };
         });
       },
@@ -505,19 +525,25 @@ export const useEditorState = create<EditorState>()(
       },
 
       updateDataSource: (key, updates) => {
-        set((state) => ({
-          pageConfig: {
-            ...state.pageConfig,
-            dataSources: {
-              ...state.pageConfig?.dataSources,
-              [key]: {
-                ...state.pageConfig?.dataSources[key],
-                ...updates,
-              },
+        set((state) => {
+          const baseConfig = state.pendingPageConfig || state.pageConfig || {};
+          const currentDataSources = baseConfig.dataSources || {};
+          const nextDataSources = {
+            ...currentDataSources,
+            [key]: {
+              ...currentDataSources[key],
+              ...updates,
             },
-          },
-          pageDataStale: true,
-        }));
+          };
+
+          return {
+            pendingPageConfig: {
+              ...baseConfig,
+              dataSources: nextDataSources,
+            },
+            pageDataStale: true,
+          };
+        });
       },
 
       removeDataSource: (key) => {
