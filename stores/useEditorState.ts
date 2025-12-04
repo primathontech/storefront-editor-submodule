@@ -291,17 +291,28 @@ export const useEditorState = create<EditorState>()(
         };
 
         const state = get();
-        const baseConfig = state.pendingPageConfig || state.pageConfig || {};
-        const sections = [...(baseConfig.sections || [])];
+        const hasDynamicData = Object.keys(extraDataSources).length > 0;
 
-        const currentLength = sections.length;
+        // Compute concrete insert index once so both paths share the same logic
+        const baseForIndex = state.pageConfig || {};
+        const sectionsForIndex = [...(baseForIndex.sections || [])];
+        const currentLengthForIndex = sectionsForIndex.length;
         const insertIndex =
           insertAfterIndex !== null && insertAfterIndex !== undefined
-            ? Math.min(insertAfterIndex + 1, currentLength)
-            : currentLength === 0
+            ? Math.min(insertAfterIndex + 1, currentLengthForIndex)
+            : currentLengthForIndex === 0
               ? 0
               : undefined;
 
+        // For purely static sections (no data sources), commit directly via addSection (no refetch)
+        if (!hasDynamicData) {
+          state.addSection(sectionForPage, insertIndex);
+          return;
+        }
+
+        // For sections that introduce data sources, stage config and refetch
+        const baseConfig = state.pendingPageConfig || state.pageConfig || {};
+        const sections = [...(baseConfig.sections || [])];
         const targetIndex =
           insertIndex !== undefined ? insertIndex : sections.length;
         sections.splice(targetIndex, 0, sectionForPage);
@@ -395,12 +406,22 @@ export const useEditorState = create<EditorState>()(
 
           const nextConfig = { ...baseConfig, sections, dataSources };
 
+          // If we touched data sources, stage config and refetch; otherwise commit directly
+          if (hasRemovedDataSources) {
+            return {
+              pendingPageConfig: nextConfig,
+              selectedSectionId: null,
+              selectedWidgetId: null,
+              showSettingsDrawer: false,
+              pageDataStale: true,
+            };
+          }
+
           return {
-            pendingPageConfig: nextConfig,
+            pageConfig: nextConfig,
             selectedSectionId: null,
             selectedWidgetId: null,
             showSettingsDrawer: false,
-            pageDataStale: true,
           };
         });
       },
