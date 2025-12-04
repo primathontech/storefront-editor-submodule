@@ -34,6 +34,7 @@ import { useEditorState } from "../../stores/useEditorState";
 import { sectionRegistry } from "@/cms/schemas/section-registry";
 import { widgetRegistry } from "@/cms/schemas/widget-registry";
 import { TranslationService } from "@/lib/i18n/translation-service";
+import { DATA_SOURCE_TYPES } from "@/lib/page-builder/models/page-config-types";
 import Dialog from "./Dialog";
 import { availableSectionsRegistry } from "@/registries/available-sections-registry";
 
@@ -74,6 +75,7 @@ export default function BuilderToolbar({
     moveSection,
     setPageConfig,
     setExpandedSections,
+    updateDataSource,
   } = useEditorState();
 
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
@@ -175,6 +177,137 @@ export default function BuilderToolbar({
       : null;
   const selectedWidgetSchema =
     selectedWidget && widgetRegistry[selectedWidget.type];
+
+  const selectedDataSource =
+    selectedWidget?.dataSourceKey && pageConfig.dataSources
+      ? pageConfig.dataSources[selectedWidget.dataSourceKey]
+      : null;
+
+  const renderDataSourceEditor = () => {
+    if (!selectedWidget || !selectedDataSource) return null;
+
+    const type = selectedDataSource.type;
+    const params = selectedDataSource.params || {};
+    const dataSourceKey = selectedWidget.dataSourceKey;
+    if (!dataSourceKey) return null;
+
+    if (type === DATA_SOURCE_TYPES.COLLECTION_BY_HANDLES) {
+      return (
+        <div className="mt-6 border-t pt-4">
+          <h4 className="text-xs font-semibold text-gray-700 mb-2">
+            Data source
+          </h4>
+          <label className="block text-[11px] font-medium text-gray-600 mb-1">
+            Collection handle
+          </label>
+          <input
+            type="text"
+            className="w-full px-2 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            value={params.handle ?? ""}
+            onChange={(e) =>
+              updateDataSource(dataSourceKey, {
+                params: {
+                  ...params,
+                  handle: e.target.value,
+                },
+              })
+            }
+            placeholder="e.g. best-sellers"
+          />
+        </div>
+      );
+    }
+
+    if (type === DATA_SOURCE_TYPES.PRODUCT) {
+      return (
+        <div className="mt-6 border-t pt-4">
+          <h4 className="text-xs font-semibold text-gray-700 mb-2">
+            Data source
+          </h4>
+          <label className="block text-[11px] font-medium text-gray-600 mb-1">
+            Product handle
+          </label>
+          <input
+            type="text"
+            className="w-full px-2 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            value={params.handle ?? ""}
+            onChange={(e) =>
+              updateDataSource(dataSourceKey, {
+                params: {
+                  ...params,
+                  handle: e.target.value,
+                },
+              })
+            }
+            placeholder="e.g. product-handle"
+          />
+        </div>
+      );
+    }
+
+    if (type === DATA_SOURCE_TYPES.PRODUCTS_BY_HANDLES) {
+      const current = Array.isArray(params.handles)
+        ? (params.handles as string[]).join(", ")
+        : "";
+      return (
+        <div className="mt-6 border-t pt-4">
+          <h4 className="text-xs font-semibold text-gray-700 mb-2">
+            Data source
+          </h4>
+          <label className="block text-[11px] font-medium text-gray-600 mb-1">
+            Product handles (comma-separated)
+          </label>
+          <input
+            type="text"
+            className="w-full px-2 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            value={current}
+            onChange={(e) => {
+              const handles = e.target.value
+                .split(",")
+                .map((h) => h.trim())
+                .filter(Boolean);
+              updateDataSource(dataSourceKey, {
+                params: {
+                  ...params,
+                  handles,
+                },
+              });
+            }}
+            placeholder="handle-1, handle-2"
+          />
+        </div>
+      );
+    }
+
+    if (type === DATA_SOURCE_TYPES.PRODUCT_RECOMMENDATIONS) {
+      return (
+        <div className="mt-6 border-t pt-4">
+          <h4 className="text-xs font-semibold text-gray-700 mb-2">
+            Data source
+          </h4>
+          <label className="block text-[11px] font-medium text-gray-600 mb-1">
+            Base product handle
+          </label>
+          <input
+            type="text"
+            className="w-full px-2 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            value={params.productHandle ?? ""}
+            onChange={(e) =>
+              updateDataSource(dataSourceKey, {
+                params: {
+                  ...params,
+                  productHandle: e.target.value,
+                },
+              })
+            }
+            placeholder="e.g. product-handle"
+          />
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   // Convert schema to DynamicForm format
   const convertSchemaToFormSchema = (schema: any) => {
@@ -547,6 +680,8 @@ export default function BuilderToolbar({
                   translationService={translationService}
                 />
               )}
+
+              {renderDataSourceEditor()}
 
               {/* Widget Settings */}
               {selectedWidget && selectedWidgetSchema && (

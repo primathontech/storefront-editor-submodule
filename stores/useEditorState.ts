@@ -480,6 +480,7 @@ export const useEditorState = create<EditorState>()(
               },
             },
           },
+          pageDataStale: true,
         }));
       },
 
