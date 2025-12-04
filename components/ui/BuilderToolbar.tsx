@@ -517,7 +517,7 @@ export default function BuilderToolbar({
                                     )}
                                   </div>
                                   {/* Remove Section Button */}
-                                  {/* <button
+                                  <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       removeSection(section.id);
@@ -538,7 +538,7 @@ export default function BuilderToolbar({
                                         d="M6 18L18 6M6 6l12 12"
                                       />
                                     </svg>
-                                  </button> */}
+                                  </button>
                                   {/* </SidebarMenuButton> */}
                                 </SidebarMenuItem>
 

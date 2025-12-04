@@ -339,12 +339,48 @@ export const useEditorState = create<EditorState>()(
             console.error("Section not found with ID:", sectionId);
             return {};
           }
+
+          const sectionToRemove = sections[sectionIndex];
+
+          // Collect data source keys from this section's widgets
+          const dataSourceKeys = (sectionToRemove.widgets || [])
+            .filter((widget: any) => widget.dataSourceKey)
+            .map((widget: any) => widget.dataSourceKey);
+
+          // Check if other sections use these data sources
+          const otherSections = sections.filter((s) => s.id !== sectionId);
+          const usedDataSourceKeys = new Set<string>();
+          otherSections.forEach((section: any) => {
+            (section.widgets || []).forEach((widget: any) => {
+              if (widget.dataSourceKey) {
+                usedDataSourceKeys.add(widget.dataSourceKey);
+              }
+            });
+          });
+
+          // Remove unused data sources
+          const dataSources = { ...(state.pageConfig?.dataSources || {}) };
+          let hasRemovedDataSources = false;
+          dataSourceKeys.forEach((key: string) => {
+            if (!usedDataSourceKeys.has(key)) {
+              delete dataSources[key];
+              hasRemovedDataSources = true;
+            }
+          });
+
+          // Remove the section
           sections.splice(sectionIndex, 1);
+
           return {
-            pageConfig: { ...state.pageConfig, sections },
+            pageConfig: {
+              ...state.pageConfig,
+              sections,
+              dataSources,
+            },
             selectedSectionId: null,
             selectedWidgetId: null,
             showSettingsDrawer: false,
+            pageDataStale: hasRemovedDataSources,
           };
         });
       },
