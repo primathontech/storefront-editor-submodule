@@ -351,7 +351,24 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
         >
           <div id="website-canvas">
             {isLoadingData && pageData && (
-              <div className="w-full h-1 bg-gradient-to-r from-blue-500 via-sky-400 to-blue-600 animate-pulse mb-1" />
+              <>
+                <style>{`
+                  @keyframes editor-progress-indeterminate {
+                    0% { transform: translateX(-100%); }
+                    50% { transform: translateX(0%); }
+                    100% { transform: translateX(100%); }
+                  }
+                `}</style>
+                <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-2">
+                  <div
+                    className="h-full w-1/3 bg-gradient-to-r from-blue-500 via-sky-400 to-blue-600"
+                    style={{
+                      animation:
+                        "editor-progress-indeterminate 1.2s ease-in-out infinite",
+                    }}
+                  />
+                </div>
+              </>
             )}
             {pageData ? (
               renderedLayout
