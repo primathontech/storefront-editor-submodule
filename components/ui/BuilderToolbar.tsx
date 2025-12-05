@@ -1,7 +1,7 @@
 // components/BuilderToolbar.js
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { DynamicForm } from "./DynamicForm";
 import { Input } from "./Input";
 import { SimpleSelect } from "./SimpleSelect";
@@ -76,10 +76,39 @@ export default function BuilderToolbar({
     setPageConfig,
     setExpandedSections,
     updateDataSource,
+    pendingPageConfig,
   } = useEditorState();
 
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
   const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
+
+  // Debounce timeout ref for data source updates
+  const dataSourceUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced version of updateDataSource to prevent typing interruption
+  const debouncedUpdateDataSource = useCallback(
+    (key: string, updates: any) => {
+      // Clear existing timeout
+      if (dataSourceUpdateTimeoutRef.current) {
+        clearTimeout(dataSourceUpdateTimeoutRef.current);
+      }
+
+      // Set new timeout (500ms delay)
+      dataSourceUpdateTimeoutRef.current = setTimeout(() => {
+        updateDataSource(key, updates);
+      }, 500);
+    },
+    [updateDataSource]
+  );
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (dataSourceUpdateTimeoutRef.current) {
+        clearTimeout(dataSourceUpdateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Get theme-specific widget registry
   const { getRouteHandleKey, getRouteHandle } = useEditorState.getState();
@@ -178,10 +207,35 @@ export default function BuilderToolbar({
   const selectedWidgetSchema =
     selectedWidget && widgetRegistry[selectedWidget.type];
 
+  // Get current page config (pending or committed) for reading latest data source values
+  const currentPageConfig = pendingPageConfig || pageConfig;
+
   const selectedDataSource =
-    selectedWidget?.dataSourceKey && pageConfig.dataSources
-      ? pageConfig.dataSources[selectedWidget.dataSourceKey]
+    selectedWidget?.dataSourceKey && currentPageConfig?.dataSources
+      ? currentPageConfig.dataSources[selectedWidget.dataSourceKey]
       : null;
+
+  // Local state for immediate input updates (keyed by dataSourceKey)
+  const [localInputValues, setLocalInputValues] = useState<
+    Record<string, string>
+  >({});
+  const [lastDataSourceKey, setLastDataSourceKey] = useState<string | null>(
+    null
+  );
+
+  // Reset local state when switching to a different data source
+  useEffect(() => {
+    const currentKey = selectedWidget?.dataSourceKey || null;
+    if (currentKey !== lastDataSourceKey && selectedDataSource) {
+      const params = selectedDataSource.params || {};
+      setLocalInputValues({
+        handle: params.handle ?? "",
+        productHandle: params.productHandle ?? "",
+        handles: Array.isArray(params.handles) ? params.handles.join(", ") : "",
+      });
+      setLastDataSourceKey(currentKey);
+    }
+  }, [selectedWidget?.dataSourceKey, selectedDataSource, lastDataSourceKey]);
 
   const renderDataSourceEditor = () => {
     if (!selectedWidget || !selectedDataSource) return null;
@@ -192,8 +246,9 @@ export default function BuilderToolbar({
     if (!dataSourceKey) return null;
 
     if (type === DATA_SOURCE_TYPES.COLLECTION_BY_HANDLES) {
+      const localValue = localInputValues.handle ?? params.handle ?? "";
       return (
-        <div className="mt-6 border-t pt-4">
+        <div className="mb-6 border-t pt-4">
           <h4 className="text-xs font-semibold text-gray-700 mb-2">
             Data source
           </h4>
@@ -203,15 +258,14 @@ export default function BuilderToolbar({
           <input
             type="text"
             className="w-full px-2 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            value={params.handle ?? ""}
-            onChange={(e) =>
-              updateDataSource(dataSourceKey, {
-                params: {
-                  ...params,
-                  handle: e.target.value,
-                },
-              })
-            }
+            value={localValue}
+            onChange={(e) => {
+              const value = e.target.value;
+              setLocalInputValues((prev) => ({ ...prev, handle: value }));
+              debouncedUpdateDataSource(dataSourceKey, {
+                params: { ...params, handle: value },
+              });
+            }}
             placeholder="e.g. best-sellers"
           />
         </div>
@@ -219,8 +273,9 @@ export default function BuilderToolbar({
     }
 
     if (type === DATA_SOURCE_TYPES.PRODUCT) {
+      const localValue = localInputValues.handle ?? params.handle ?? "";
       return (
-        <div className="mt-6 border-t pt-4">
+        <div className="mb-6 border-t pt-4">
           <h4 className="text-xs font-semibold text-gray-700 mb-2">
             Data source
           </h4>
@@ -230,15 +285,14 @@ export default function BuilderToolbar({
           <input
             type="text"
             className="w-full px-2 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            value={params.handle ?? ""}
-            onChange={(e) =>
-              updateDataSource(dataSourceKey, {
-                params: {
-                  ...params,
-                  handle: e.target.value,
-                },
-              })
-            }
+            value={localValue}
+            onChange={(e) => {
+              const value = e.target.value;
+              setLocalInputValues((prev) => ({ ...prev, handle: value }));
+              debouncedUpdateDataSource(dataSourceKey, {
+                params: { ...params, handle: value },
+              });
+            }}
             placeholder="e.g. product-handle"
           />
         </div>
@@ -246,11 +300,11 @@ export default function BuilderToolbar({
     }
 
     if (type === DATA_SOURCE_TYPES.PRODUCTS_BY_HANDLES) {
-      const current = Array.isArray(params.handles)
-        ? (params.handles as string[]).join(", ")
-        : "";
+      const localValue =
+        localInputValues.handles ??
+        (Array.isArray(params.handles) ? params.handles.join(", ") : "");
       return (
-        <div className="mt-6 border-t pt-4">
+        <div className="mb-6 border-t pt-4">
           <h4 className="text-xs font-semibold text-gray-700 mb-2">
             Data source
           </h4>
@@ -260,17 +314,16 @@ export default function BuilderToolbar({
           <input
             type="text"
             className="w-full px-2 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            value={current}
+            value={localValue}
             onChange={(e) => {
-              const handles = e.target.value
+              const value = e.target.value;
+              setLocalInputValues((prev) => ({ ...prev, handles: value }));
+              const handles = value
                 .split(",")
                 .map((h) => h.trim())
                 .filter(Boolean);
-              updateDataSource(dataSourceKey, {
-                params: {
-                  ...params,
-                  handles,
-                },
+              debouncedUpdateDataSource(dataSourceKey, {
+                params: { ...params, handles },
               });
             }}
             placeholder="handle-1, handle-2"
@@ -280,8 +333,10 @@ export default function BuilderToolbar({
     }
 
     if (type === DATA_SOURCE_TYPES.PRODUCT_RECOMMENDATIONS) {
+      const localValue =
+        localInputValues.productHandle ?? params.productHandle ?? "";
       return (
-        <div className="mt-6 border-t pt-4">
+        <div className="mb-6 border-t pt-4">
           <h4 className="text-xs font-semibold text-gray-700 mb-2">
             Data source
           </h4>
@@ -291,15 +346,17 @@ export default function BuilderToolbar({
           <input
             type="text"
             className="w-full px-2 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            value={params.productHandle ?? ""}
-            onChange={(e) =>
-              updateDataSource(dataSourceKey, {
-                params: {
-                  ...params,
-                  productHandle: e.target.value,
-                },
-              })
-            }
+            value={localValue}
+            onChange={(e) => {
+              const value = e.target.value;
+              setLocalInputValues((prev) => ({
+                ...prev,
+                productHandle: value,
+              }));
+              debouncedUpdateDataSource(dataSourceKey, {
+                params: { ...params, productHandle: value },
+              });
+            }}
             placeholder="e.g. product-handle"
           />
         </div>

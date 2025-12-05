@@ -46,6 +46,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     setSelectedWidget,
     setShowSettingsDrawer,
     setThemeId,
+    setTemplateId,
     routeContext,
     setRouteContext,
     updateRouteHandle,
@@ -68,7 +69,8 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
   useEffect(() => {
     setRouteContext(templateMeta.routeContext);
-  }, [setRouteContext, templateMeta?.routeContext]);
+    setTemplateId(templateMeta.id);
+  }, [setRouteContext, setTemplateId, templateMeta?.routeContext, templateMeta?.id]);
 
   // Load merchant ID, template, and i18n data in a single useEffect
   useEffect(() => {

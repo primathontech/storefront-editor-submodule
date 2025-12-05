@@ -4,6 +4,12 @@ import { nanoid } from "nanoid";
 import { sectionRegistry } from "@/cms/schemas/section-registry";
 import { widgetRegistry } from "@/cms/schemas/widget-registry";
 import { availableSectionsRegistry } from "@/registries/available-sections-registry";
+import { useDualTranslationStore } from "./dualTranslationStore";
+import {
+  extractTranslationKeys,
+  remapTranslationKeys,
+} from "../utils/section-translation-utils";
+import { translationUtils } from "./dualTranslationStore";
 
 // Widget to Data Source mapping
 const WIDGET_DATA_SOURCE_MAP: Record<string, string> = {
@@ -43,6 +49,7 @@ export interface EditorState {
   pendingPageConfig: any | null;
   pageData: any | null;
   themeId: string; // Add themeId to state
+  templateId: string | null; // Template ID for translation namespace
   routeContext: any; // Add routeContext to state
   pageDataStale: boolean;
 
@@ -59,6 +66,7 @@ export interface EditorState {
   setPendingPageConfig: (config: any | null) => void;
   updatePageConfig: (updater: (prev: any) => any) => void;
   setThemeId: (themeId: string) => void; // Add setThemeId action
+  setTemplateId: (templateId: string | null) => void; // Add setTemplateId action
   setRouteContext: (context: any) => void; // Add setRouteContext action
   updateRouteHandle: (handle: string) => void; // Add updateRouteHandle action
 
@@ -123,6 +131,7 @@ export const useEditorState = create<EditorState>()(
       pageData: null,
       pageDataStale: false,
       themeId: null, // Default theme
+      templateId: null, // Template ID
       routeContext: null, // Default route context
       selectedSectionId: null,
       selectedWidgetId: null,
@@ -158,6 +167,10 @@ export const useEditorState = create<EditorState>()(
 
       setThemeId: (themeId) => {
         set({ themeId });
+      },
+
+      setTemplateId: (templateId) => {
+        set({ templateId });
       },
 
       setRouteContext: (context) => {
@@ -290,11 +303,80 @@ export const useEditorState = create<EditorState>()(
           }),
         };
 
-        const state = get();
+        // Handle translation keys remapping
+        const editorState = get();
+        const translationStore = useDualTranslationStore.getState();
+        const { templateTranslations } = translationStore;
+        const templateId = editorState.templateId;
+
+        if (
+          templateTranslations &&
+          Object.keys(templateTranslations).length > 0 &&
+          templateId
+        ) {
+          // Extract translation keys from section widgets
+          const allTranslationKeys: string[] = [];
+          sectionForPage.widgets.forEach((widget: any) => {
+            if (widget.settings) {
+              allTranslationKeys.push(
+                ...extractTranslationKeys(widget.settings)
+              );
+            }
+          });
+
+          // Find old section pattern from first template-specific key
+          // Use templateId as namespace for page-specific translations
+          let oldSectionPattern: string | null = null;
+          for (const keyStr of allTranslationKeys) {
+            // Skip common keys - they don't need remapping
+            if (translationUtils.isTranslationKey(keyStr)) {
+              const path = translationUtils.getTranslationPath(keyStr);
+              if (path[0] === "common") continue;
+
+              // Check if it's a section key: namespace.sections.{pattern}.*
+              if (path.length >= 3 && path[1] === "sections") {
+                oldSectionPattern = path[2];
+                break;
+              }
+            }
+          }
+
+          // If we found translation keys with section pattern, remap them
+          if (allTranslationKeys.length > 0 && oldSectionPattern) {
+            const uniqueSectionKey = sectionId.replace(/-/g, "_");
+
+            // Create new translation entries BEFORE remapping
+            translationStore.createSectionTranslations(
+              sectionId,
+              allTranslationKeys,
+              templateId,
+              oldSectionPattern
+            );
+
+            // Remap widget settings to use unique section key
+            sectionForPage.widgets = sectionForPage.widgets.map(
+              (widget: any) => {
+                if (widget.settings) {
+                  return {
+                    ...widget,
+                    settings: remapTranslationKeys(
+                      widget.settings,
+                      oldSectionPattern!,
+                      uniqueSectionKey,
+                      templateId
+                    ),
+                  };
+                }
+                return widget;
+              }
+            );
+          }
+        }
+
         const hasDynamicData = Object.keys(extraDataSources).length > 0;
 
         // Compute concrete insert index once so both paths share the same logic
-        const baseForIndex = state.pageConfig || {};
+        const baseForIndex = editorState.pageConfig || {};
         const sectionsForIndex = [...(baseForIndex.sections || [])];
         const currentLengthForIndex = sectionsForIndex.length;
         const insertIndex =
@@ -306,12 +388,13 @@ export const useEditorState = create<EditorState>()(
 
         // For purely static sections (no data sources), commit directly via addSection (no refetch)
         if (!hasDynamicData) {
-          state.addSection(sectionForPage, insertIndex);
+          editorState.addSection(sectionForPage, insertIndex);
           return;
         }
 
         // For sections that introduce data sources, stage config and refetch
-        const baseConfig = state.pendingPageConfig || state.pageConfig || {};
+        const baseConfig =
+          editorState.pendingPageConfig || editorState.pageConfig || {};
         const sections = [...(baseConfig.sections || [])];
         const targetIndex =
           insertIndex !== undefined ? insertIndex : sections.length;

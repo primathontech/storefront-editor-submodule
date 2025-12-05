@@ -15,9 +15,11 @@ interface EditorHeader2Props {
 
 // Feature flag: only fetch translations from API when explicitly enabled
 const isEditorChangesEnabled = (): boolean => {
-  const flag =
-    typeof process !== "undefined" && process.env?.ENABLE_EDITOR_CHANGES;
-  return String(flag).toLowerCase() === "true";
+  // TODO: add environment variable for client side editor changes
+  // const flag =
+  //   typeof process !== "undefined" && process.env?.NEXT_PUBLIC_ENABLE_EDITOR_CHANGES;
+  // return String(flag).toLowerCase() === "true";
+  return true;
 };
 
 const EditorHeader2: React.FC<EditorHeader2Props> = ({

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { api } from "../services/api";
+import { createSectionTranslations } from "../utils/section-translation-utils";
 
 interface DualTranslationState {
   // Public interface (same as original store)
@@ -29,6 +30,14 @@ interface DualTranslationState {
     language: string
   ) => Promise<void>;
   saveTranslations: (themeId: string, templateId: string) => Promise<void>;
+
+  // Section Translation Actions
+  createSectionTranslations: (
+    sectionId: string,
+    translationKeys: string[],
+    templateId: string,
+    oldSectionPattern: string
+  ) => void;
 }
 
 // Helper function to flatten object and get all paths
@@ -240,6 +249,54 @@ export const useDualTranslationStore = create<DualTranslationState>(
       } finally {
         set({ isSaving: false });
       }
+    },
+
+    // Section Translation Actions
+    createSectionTranslations: (
+      sectionId: string,
+      translationKeys: string[],
+      templateId: string,
+      oldSectionPattern: string
+    ) => {
+      const state = get();
+      const { templateTranslations } = state;
+
+      // Generate unique section key from sectionId
+      const uniqueSectionKey = sectionId.replace(/-/g, "_");
+
+      // Create new translation entries using static theme translations
+      // (same source as src/i18n.ts - static imports)
+      const newTranslations = createSectionTranslations(
+        translationKeys,
+        templateId,
+        oldSectionPattern,
+        uniqueSectionKey
+      );
+
+      // Merge new translations into templateTranslations
+      const updatedTemplateTranslations = deepMerge(
+        templateTranslations,
+        newTranslations
+      );
+
+      // Update source map for new paths
+      const updatedSourceMap = new Map(state.translationSourceMap);
+      flattenObject(newTranslations).forEach((path) => {
+        updatedSourceMap.set(path.join("."), "template");
+      });
+
+      // Merge with common translations
+      const mergedTranslations = deepMerge(
+        state.commonTranslations,
+        updatedTemplateTranslations
+      );
+
+      set({
+        templateTranslations: updatedTemplateTranslations,
+        translations: mergedTranslations,
+        translationSourceMap: updatedSourceMap,
+        hasUnsavedChanges: true,
+      });
     },
   })
 );
