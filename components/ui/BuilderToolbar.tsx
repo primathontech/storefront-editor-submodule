@@ -130,7 +130,51 @@ export default function BuilderToolbar({
     }
   }, [pageConfig, setPageConfig, setExpandedSections]);
 
-  // Defensive check for pageConfig
+  // Get current page config (pending or committed) for reading latest data source values
+  const currentPageConfig = pendingPageConfig || pageConfig;
+
+  // Local state for immediate input updates (keyed by dataSourceKey)
+  const [localInputValues, setLocalInputValues] = useState<
+    Record<string, string>
+  >({});
+  const [lastDataSourceKey, setLastDataSourceKey] = useState<string | null>(
+    null
+  );
+
+  // Get selected section and widget (before early return)
+  const selectedSection =
+    selectedSectionId !== null && pageConfig?.sections
+      ? pageConfig.sections.find((s: any) => s.id === selectedSectionId)
+      : null;
+  const selectedSectionSchema =
+    selectedSection && sectionRegistry[selectedSection.type];
+  const selectedWidget =
+    selectedSection && selectedWidgetId !== null
+      ? selectedSection.widgets.find((w: any) => w.id === selectedWidgetId)
+      : null;
+  const selectedWidgetSchema =
+    selectedWidget && widgetRegistry[selectedWidget.type];
+
+  const selectedDataSource =
+    selectedWidget?.dataSourceKey && currentPageConfig?.dataSources
+      ? currentPageConfig.dataSources[selectedWidget.dataSourceKey]
+      : null;
+
+  // Reset local state when switching to a different data source
+  useEffect(() => {
+    const currentKey = selectedWidget?.dataSourceKey || null;
+    if (currentKey !== lastDataSourceKey && selectedDataSource) {
+      const params = selectedDataSource.params || {};
+      setLocalInputValues({
+        handle: params.handle ?? "",
+        productHandle: params.productHandle ?? "",
+        handles: Array.isArray(params.handles) ? params.handles.join(", ") : "",
+      });
+      setLastDataSourceKey(currentKey);
+    }
+  }, [selectedWidget?.dataSourceKey, selectedDataSource, lastDataSourceKey]);
+
+  // Defensive check for pageConfig (after all hooks)
   if (!pageConfig || !Array.isArray(pageConfig.sections)) {
     return <div className="text-gray-500 p-4">No template loaded.</div>;
   }
@@ -193,49 +237,6 @@ export default function BuilderToolbar({
     setSelectedSection(sectionId);
     setSelectedWidget(widgetId);
   };
-
-  const selectedSection =
-    selectedSectionId !== null
-      ? pageConfig.sections.find((s: any) => s.id === selectedSectionId)
-      : null;
-  const selectedSectionSchema =
-    selectedSection && sectionRegistry[selectedSection.type];
-  const selectedWidget =
-    selectedSection && selectedWidgetId !== null
-      ? selectedSection.widgets.find((w: any) => w.id === selectedWidgetId)
-      : null;
-  const selectedWidgetSchema =
-    selectedWidget && widgetRegistry[selectedWidget.type];
-
-  // Get current page config (pending or committed) for reading latest data source values
-  const currentPageConfig = pendingPageConfig || pageConfig;
-
-  const selectedDataSource =
-    selectedWidget?.dataSourceKey && currentPageConfig?.dataSources
-      ? currentPageConfig.dataSources[selectedWidget.dataSourceKey]
-      : null;
-
-  // Local state for immediate input updates (keyed by dataSourceKey)
-  const [localInputValues, setLocalInputValues] = useState<
-    Record<string, string>
-  >({});
-  const [lastDataSourceKey, setLastDataSourceKey] = useState<string | null>(
-    null
-  );
-
-  // Reset local state when switching to a different data source
-  useEffect(() => {
-    const currentKey = selectedWidget?.dataSourceKey || null;
-    if (currentKey !== lastDataSourceKey && selectedDataSource) {
-      const params = selectedDataSource.params || {};
-      setLocalInputValues({
-        handle: params.handle ?? "",
-        productHandle: params.productHandle ?? "",
-        handles: Array.isArray(params.handles) ? params.handles.join(", ") : "",
-      });
-      setLastDataSourceKey(currentKey);
-    }
-  }, [selectedWidget?.dataSourceKey, selectedDataSource, lastDataSourceKey]);
 
   const renderDataSourceEditor = () => {
     if (!selectedWidget || !selectedDataSource) return null;
