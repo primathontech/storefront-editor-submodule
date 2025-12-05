@@ -458,6 +458,14 @@ export const useEditorState = create<EditorState>()(
 
           const sectionToRemove = sections[sectionIndex];
 
+          // Remove section translations
+          const editorState = get();
+          const translationStore = useDualTranslationStore.getState();
+          const templateId = editorState.templateId;
+          if (templateId) {
+            translationStore.removeSectionTranslations(sectionId, templateId);
+          }
+
           // Collect data source keys from this section's widgets
           const dataSourceKeys = (sectionToRemove.widgets || [])
             .filter((widget: any) => widget.dataSourceKey)

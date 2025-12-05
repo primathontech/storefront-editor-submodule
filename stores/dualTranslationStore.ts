@@ -38,6 +38,7 @@ interface DualTranslationState {
     templateId: string,
     oldSectionPattern: string
   ) => void;
+  removeSectionTranslations: (sectionId: string, templateId: string) => void;
 }
 
 // Helper function to flatten object and get all paths
@@ -286,6 +287,66 @@ export const useDualTranslationStore = create<DualTranslationState>(
       });
 
       // Merge with common translations
+      const mergedTranslations = deepMerge(
+        state.commonTranslations,
+        updatedTemplateTranslations
+      );
+
+      set({
+        templateTranslations: updatedTemplateTranslations,
+        translations: mergedTranslations,
+        translationSourceMap: updatedSourceMap,
+        hasUnsavedChanges: true,
+      });
+    },
+
+    // Remove section translations when section is deleted
+    // Note: Section translations are ALWAYS template-specific (never common).
+    // createSectionTranslations() explicitly skips common keys, so we only need
+    // to remove from templateTranslations, never from commonTranslations.
+    removeSectionTranslations: (sectionId: string, templateId: string) => {
+      const state = get();
+      const { templateTranslations } = state;
+
+      // Generate unique section key from sectionId (same logic as creation)
+      const uniqueSectionKey = sectionId.replace(/-/g, "_");
+
+      // Check if translations exist for this section
+      if (!templateTranslations[templateId]?.sections?.[uniqueSectionKey]) {
+        return; // No translations to remove
+      }
+
+      // Remove section translations from templateTranslations only
+      // (commonTranslations are never touched - they're shared and never section-specific)
+      const updatedTemplateTranslations = { ...templateTranslations };
+      if (updatedTemplateTranslations[templateId]?.sections) {
+        const { [uniqueSectionKey]: removed, ...remainingSections } =
+          updatedTemplateTranslations[templateId].sections;
+        updatedTemplateTranslations[templateId] = {
+          ...updatedTemplateTranslations[templateId],
+          sections: remainingSections,
+        };
+
+        // Clean up empty templateId object if no sections remain
+        if (
+          Object.keys(updatedTemplateTranslations[templateId].sections || {})
+            .length === 0
+        ) {
+          delete updatedTemplateTranslations[templateId].sections;
+        }
+      }
+
+      // Remove all paths from translationSourceMap that match this section
+      // Path pattern: templateId.sections.uniqueSectionKey.* (always template, never common)
+      const updatedSourceMap = new Map(state.translationSourceMap);
+      const sectionPrefix = `${templateId}.sections.${uniqueSectionKey}`;
+      Array.from(updatedSourceMap.keys()).forEach((path) => {
+        if (path.startsWith(sectionPrefix)) {
+          updatedSourceMap.delete(path);
+        }
+      });
+
+      // Re-merge translations
       const mergedTranslations = deepMerge(
         state.commonTranslations,
         updatedTemplateTranslations
