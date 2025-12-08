@@ -5,10 +5,7 @@ import { sectionRegistry } from "@/cms/schemas/section-registry";
 import { widgetRegistry } from "@/cms/schemas/widget-registry";
 import { availableSectionsRegistry } from "@/registries/available-sections-registry";
 import { useDualTranslationStore } from "./dualTranslationStore";
-import {
-  extractTranslationKeys,
-  remapTranslationKeys,
-} from "../utils/section-translation-utils";
+import { processSectionWidgets } from "../utils/section-translation-utils";
 import { translationUtils } from "./dualTranslationStore";
 
 // Widget to Data Source mapping
@@ -303,72 +300,34 @@ export const useEditorState = create<EditorState>()(
           }),
         };
 
-        // Handle translation keys remapping
+        // Process translations: remap keys and create translations
         const editorState = get();
         const translationStore = useDualTranslationStore.getState();
-        const { templateTranslations } = translationStore;
         const templateId = editorState.templateId;
+        const isCommon = existingBlock.isCommon === true;
+        const uniqueSectionKey = sectionId.replace(/-/g, "_");
 
-        if (
-          templateTranslations &&
-          Object.keys(templateTranslations).length > 0 &&
-          templateId
-        ) {
-          // Extract translation keys from section widgets
-          const allTranslationKeys: string[] = [];
-          sectionForPage.widgets.forEach((widget: any) => {
-            if (widget.settings) {
-              allTranslationKeys.push(
-                ...extractTranslationKeys(widget.settings)
-              );
-            }
-          });
-
-          // Find old section pattern from first template-specific key
-          // Use templateId as namespace for page-specific translations
-          let oldSectionPattern: string | null = null;
-          for (const keyStr of allTranslationKeys) {
-            // Skip common keys - they don't need remapping
-            if (translationUtils.isTranslationKey(keyStr)) {
-              const path = translationUtils.getTranslationPath(keyStr);
-              if (path[0] === "common") continue;
-
-              // Check if it's a section key: namespace.sections.{pattern}.*
-              if (path.length >= 3 && path[1] === "sections") {
-                oldSectionPattern = path[2];
-                break;
-              }
-            }
-          }
-
-          // If we found translation keys with section pattern, remap them
-          if (allTranslationKeys.length > 0 && oldSectionPattern) {
-            const uniqueSectionKey = sectionId.replace(/-/g, "_");
-
-            // Create new translation entries BEFORE remapping
-            translationStore.createSectionTranslations(
-              sectionId,
-              allTranslationKeys,
+        // Process template-specific sections (common sections use existing common.* keys)
+        if (!isCommon && templateId) {
+          const { remappedWidgets, translationKeys, oldSectionPattern } =
+            processSectionWidgets(
+              sectionForPage.widgets,
+              uniqueSectionKey,
               templateId,
-              oldSectionPattern
+              isCommon
             );
 
-            // Remap widget settings to use unique section key
-            sectionForPage.widgets = sectionForPage.widgets.map(
-              (widget: any) => {
-                if (widget.settings) {
-                  return {
-                    ...widget,
-                    settings: remapTranslationKeys(
-                      widget.settings,
-                      oldSectionPattern!,
-                      uniqueSectionKey,
-                      templateId
-                    ),
-                  };
-                }
-                return widget;
-              }
+          sectionForPage.widgets = remappedWidgets;
+
+          // Create translations if section keys found
+          if (translationKeys.length > 0 && oldSectionPattern) {
+            translationStore.createSectionTranslations(
+              translationKeys,
+              existingBlock.defaultTranslations || { en: {} },
+              translationStore.language || "en",
+              templateId,
+              oldSectionPattern,
+              uniqueSectionKey
             );
           }
         }
