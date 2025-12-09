@@ -1,7 +1,7 @@
 // components/BuilderToolbar.js
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { DynamicForm } from "./DynamicForm";
 import { Input } from "./Input";
 import { SimpleSelect } from "./SimpleSelect";
@@ -37,6 +37,7 @@ import { TranslationService } from "@/lib/i18n/translation-service";
 import { DATA_SOURCE_TYPES } from "@/lib/page-builder/models/page-config-types";
 import Dialog from "./Dialog";
 import { availableSectionsRegistry } from "@/registries/available-sections-registry";
+import { useDataSourceOptions } from "../../hooks/useDataSourceOptions";
 
 interface BuilderToolbarProps {
   pageConfig: any;
@@ -82,34 +83,6 @@ export default function BuilderToolbar({
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
   const [insertAfterIndex, setInsertAfterIndex] = useState<number | null>(null);
 
-  // Debounce timeout ref for data source updates
-  const dataSourceUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Debounced version of updateDataSource to prevent typing interruption
-  const debouncedUpdateDataSource = useCallback(
-    (key: string, updates: any) => {
-      // Clear existing timeout
-      if (dataSourceUpdateTimeoutRef.current) {
-        clearTimeout(dataSourceUpdateTimeoutRef.current);
-      }
-
-      // Set new timeout (500ms delay)
-      dataSourceUpdateTimeoutRef.current = setTimeout(() => {
-        updateDataSource(key, updates);
-      }, 500);
-    },
-    [updateDataSource]
-  );
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (dataSourceUpdateTimeoutRef.current) {
-        clearTimeout(dataSourceUpdateTimeoutRef.current);
-      }
-    };
-  }, []);
-
   // Get theme-specific widget registry
   const { getRouteHandleKey, getRouteHandle } = useEditorState.getState();
   const routeHandleKey = getRouteHandleKey();
@@ -133,14 +106,6 @@ export default function BuilderToolbar({
   // Get current page config (pending or committed) for reading latest data source values
   const currentPageConfig = pendingPageConfig || pageConfig;
 
-  // Local state for immediate input updates (keyed by dataSourceKey)
-  const [localInputValues, setLocalInputValues] = useState<
-    Record<string, string>
-  >({});
-  const [lastDataSourceKey, setLastDataSourceKey] = useState<string | null>(
-    null
-  );
-
   // Get selected section and widget (before early return)
   const selectedSection =
     selectedSectionId !== null && pageConfig?.sections
@@ -160,19 +125,9 @@ export default function BuilderToolbar({
       ? currentPageConfig.dataSources[selectedWidget.dataSourceKey]
       : null;
 
-  // Reset local state when switching to a different data source
-  useEffect(() => {
-    const currentKey = selectedWidget?.dataSourceKey || null;
-    if (currentKey !== lastDataSourceKey && selectedDataSource) {
-      const params = selectedDataSource.params || {};
-      setLocalInputValues({
-        handle: params.handle ?? "",
-        productHandle: params.productHandle ?? "",
-        handles: Array.isArray(params.handles) ? params.handles.join(", ") : "",
-      });
-      setLastDataSourceKey(currentKey);
-    }
-  }, [selectedWidget?.dataSourceKey, selectedDataSource, lastDataSourceKey]);
+  // Fetch options for data source dropdown
+  const { options: dataSourceOptions, loading: dataSourceOptionsLoading } =
+    useDataSourceOptions(selectedDataSource?.type || null);
 
   // Defensive check for pageConfig (after all hooks)
   if (!pageConfig || !Array.isArray(pageConfig.sections)) {
@@ -246,120 +201,160 @@ export default function BuilderToolbar({
     const dataSourceKey = selectedWidget.dataSourceKey;
     if (!dataSourceKey) return null;
 
+    const handleSelect = (handle: string) => {
+      updateDataSource(dataSourceKey, {
+        params: { ...params, handle },
+      });
+    };
+
+    const handleProductSelect = (handle: string) => {
+      updateDataSource(dataSourceKey, {
+        params: { ...params, productHandle: handle },
+      });
+    };
+
     if (type === DATA_SOURCE_TYPES.COLLECTION_BY_HANDLES) {
-      const localValue = localInputValues.handle ?? params.handle ?? "";
+      const currentValue = params.handle ?? "";
       return (
         <div className="mb-6 border-t pt-4">
           <h4 className="text-xs font-semibold text-gray-700 mb-2">
             Data source
           </h4>
-          <label className="block text-[11px] font-medium text-gray-600 mb-1">
-            Collection handle
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Collection
           </label>
-          <input
-            type="text"
-            className="w-full px-2 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            value={localValue}
-            onChange={(e) => {
-              const value = e.target.value;
-              setLocalInputValues((prev) => ({ ...prev, handle: value }));
-              debouncedUpdateDataSource(dataSourceKey, {
-                params: { ...params, handle: value },
-              });
-            }}
-            placeholder="e.g. best-sellers"
-          />
+          {dataSourceOptionsLoading ? (
+            <div className="text-xs text-gray-500 py-2">Loading...</div>
+          ) : (
+            <SimpleSelect
+              options={dataSourceOptions}
+              value={currentValue}
+              onSelect={handleSelect}
+              placeholder="Select collection"
+              size="sm"
+            />
+          )}
         </div>
       );
     }
 
     if (type === DATA_SOURCE_TYPES.PRODUCT) {
-      const localValue = localInputValues.handle ?? params.handle ?? "";
+      const currentValue = params.handle ?? "";
       return (
         <div className="mb-6 border-t pt-4">
           <h4 className="text-xs font-semibold text-gray-700 mb-2">
             Data source
           </h4>
           <label className="block text-[11px] font-medium text-gray-600 mb-1">
-            Product handle
+            Product
           </label>
-          <input
-            type="text"
-            className="w-full px-2 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            value={localValue}
-            onChange={(e) => {
-              const value = e.target.value;
-              setLocalInputValues((prev) => ({ ...prev, handle: value }));
-              debouncedUpdateDataSource(dataSourceKey, {
-                params: { ...params, handle: value },
-              });
-            }}
-            placeholder="e.g. product-handle"
-          />
+          {dataSourceOptionsLoading ? (
+            <div className="text-xs text-gray-500 py-2">Loading...</div>
+          ) : (
+            <SimpleSelect
+              options={dataSourceOptions}
+              value={currentValue}
+              onSelect={handleSelect}
+              placeholder="Select product"
+              size="sm"
+            />
+          )}
         </div>
       );
     }
 
     if (type === DATA_SOURCE_TYPES.PRODUCTS_BY_HANDLES) {
-      const localValue =
-        localInputValues.handles ??
-        (Array.isArray(params.handles) ? params.handles.join(", ") : "");
+      const currentHandles = Array.isArray(params.handles)
+        ? params.handles
+        : [];
+      const handleAddProduct = (handle: string) => {
+        if (!currentHandles.includes(handle)) {
+          updateDataSource(dataSourceKey, {
+            params: { ...params, handles: [...currentHandles, handle] },
+          });
+        }
+      };
+      const handleRemoveProduct = (handle: string) => {
+        updateDataSource(dataSourceKey, {
+          params: {
+            ...params,
+            handles: currentHandles.filter((h: string) => h !== handle),
+          },
+        });
+      };
       return (
         <div className="mb-6 border-t pt-4">
           <h4 className="text-xs font-semibold text-gray-700 mb-2">
             Data source
           </h4>
           <label className="block text-[11px] font-medium text-gray-600 mb-1">
-            Product handles (comma-separated)
+            Products
           </label>
-          <input
-            type="text"
-            className="w-full px-2 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            value={localValue}
-            onChange={(e) => {
-              const value = e.target.value;
-              setLocalInputValues((prev) => ({ ...prev, handles: value }));
-              const handles = value
-                .split(",")
-                .map((h) => h.trim())
-                .filter(Boolean);
-              debouncedUpdateDataSource(dataSourceKey, {
-                params: { ...params, handles },
-              });
-            }}
-            placeholder="handle-1, handle-2"
-          />
+          {dataSourceOptionsLoading ? (
+            <div className="text-xs text-gray-500 py-2">Loading...</div>
+          ) : (
+            <>
+              <SimpleSelect
+                options={dataSourceOptions.filter(
+                  (opt) => !currentHandles.includes(opt.value)
+                )}
+                value=""
+                onSelect={handleAddProduct}
+                placeholder="Add product"
+                size="sm"
+                className="mb-2"
+              />
+              {currentHandles.length > 0 && (
+                <div className="space-y-1 mt-2">
+                  {currentHandles.map((handle: string) => {
+                    const option = dataSourceOptions.find(
+                      (opt) => opt.value === handle
+                    );
+                    return (
+                      <div
+                        key={handle}
+                        className="flex items-center justify-between text-xs bg-gray-50 px-2 py-1 rounded"
+                      >
+                        <span>{option?.label || handle}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveProduct(handle)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
         </div>
       );
     }
 
     if (type === DATA_SOURCE_TYPES.PRODUCT_RECOMMENDATIONS) {
-      const localValue =
-        localInputValues.productHandle ?? params.productHandle ?? "";
+      const currentValue = params.productHandle ?? "";
       return (
         <div className="mb-6 border-t pt-4">
           <h4 className="text-xs font-semibold text-gray-700 mb-2">
             Data source
           </h4>
           <label className="block text-[11px] font-medium text-gray-600 mb-1">
-            Base product handle
+            Base product
           </label>
-          <input
-            type="text"
-            className="w-full px-2 py-1.5 rounded border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            value={localValue}
-            onChange={(e) => {
-              const value = e.target.value;
-              setLocalInputValues((prev) => ({
-                ...prev,
-                productHandle: value,
-              }));
-              debouncedUpdateDataSource(dataSourceKey, {
-                params: { ...params, productHandle: value },
-              });
-            }}
-            placeholder="e.g. product-handle"
-          />
+          {dataSourceOptionsLoading ? (
+            <div className="text-xs text-gray-500 py-2">Loading...</div>
+          ) : (
+            <SimpleSelect
+              options={dataSourceOptions}
+              value={currentValue}
+              onSelect={handleProductSelect}
+              placeholder="Select product"
+              size="sm"
+            />
+          )}
         </div>
       );
     }

@@ -7,7 +7,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/ui/atomic";
+} from "./Select";
 
 export interface SimpleSelectOption {
   value: string;
