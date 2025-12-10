@@ -24,8 +24,7 @@ export interface BaseComponentProps {
 }
 
 export interface InputProps
-  extends
-    Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">,
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">,
     BaseComponentProps {
   error?: boolean;
   helperText?: string;
