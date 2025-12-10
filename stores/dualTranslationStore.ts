@@ -210,7 +210,9 @@ export const useDualTranslationStore = create<DualTranslationState>(
         hasUnsavedChanges,
       } = get();
 
-      if (!hasUnsavedChanges) return;
+      if (!hasUnsavedChanges) {
+        return;
+      }
 
       set({ isSaving: true, error: null });
 

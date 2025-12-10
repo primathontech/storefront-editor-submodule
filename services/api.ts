@@ -13,7 +13,9 @@ export class EditorAPI {
   static async getThemes(): Promise<any> {
     try {
       const response = await fetch(`${this.apiURL}/api/v1/themes`);
-      if (!response.ok) throw new Error("Failed to fetch themes");
+      if (!response.ok) {
+        throw new Error("Failed to fetch themes");
+      }
       const data = await response.json();
       return data.data.themes;
     } catch (error) {
@@ -28,7 +30,9 @@ export class EditorAPI {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ themeId }),
       });
-      if (!response.ok) throw new Error("Failed to fetch theme");
+      if (!response.ok) {
+        throw new Error("Failed to fetch theme");
+      }
       const data = await response.json();
       return data.data;
     } catch (error) {
@@ -51,7 +55,9 @@ export class EditorAPI {
           variant,
         }),
       });
-      if (!response.ok) throw new Error("Failed to fetch template");
+      if (!response.ok) {
+        throw new Error("Failed to fetch template");
+      }
       const data = await response.json();
       return data.data;
     } catch (error) {
@@ -89,7 +95,9 @@ export class EditorAPI {
           body: JSON.stringify(templateData),
         }
       );
-      if (!response.ok) throw new Error("Failed to save template");
+      if (!response.ok) {
+        throw new Error("Failed to save template");
+      }
       const data = await response.json();
       return data.data;
     } catch (error) {
@@ -108,7 +116,9 @@ export class EditorAPI {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ themeId, templateId, language }),
       });
-      if (!response.ok) throw new Error("Failed to fetch translation");
+      if (!response.ok) {
+        throw new Error("Failed to fetch translation");
+      }
       const data = await response.json();
       return data.data;
     } catch (error) {
@@ -196,7 +206,9 @@ export class EditorAPI {
   static async getMerchantName(): Promise<string> {
     try {
       const response = await fetch(`/editor/api/merchant-name`);
-      if (!response.ok) throw new Error("Failed to fetch merchant Name");
+      if (!response.ok) {
+        throw new Error("Failed to fetch merchant Name");
+      }
       const data = await response.json();
       return data.data.merchantName;
     } catch (error) {

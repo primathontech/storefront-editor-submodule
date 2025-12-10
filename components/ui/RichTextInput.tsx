@@ -270,7 +270,9 @@ export const RichTextInput: React.FC<RichTextInputProps> = ({
   // Strip HTML tags for preview
   const getPreviewText = useCallback(
     (html: string) => {
-      if (!html) return placeholder;
+      if (!html) {
+        return placeholder;
+      }
       const div = document.createElement("div");
       div.innerHTML = html;
       const text = div.textContent || div.innerText || "";
