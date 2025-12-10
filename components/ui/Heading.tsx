@@ -34,7 +34,9 @@ export const Heading = React.forwardRef<HTMLHeadingElement, HeadingProps>(
     const currentTheme = previewTheme || activeTheme;
 
     const themeStyles = React.useMemo(() => {
-      if (!currentTheme?.config) return {};
+      if (!currentTheme?.config) {
+        return {};
+      }
 
       const { colors, typography } = currentTheme.config;
       const styles: React.CSSProperties = {

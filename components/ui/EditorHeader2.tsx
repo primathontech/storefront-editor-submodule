@@ -39,7 +39,9 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedTemplateId = e.target.value;
-    if (!selectedTemplateId || !theme || !onTemplateChange) return;
+    if (!selectedTemplateId || !theme || !onTemplateChange) {
+      return;
+    }
 
     for (const group of theme.templateStructure) {
       const foundTemplate = group.templates?.find(
