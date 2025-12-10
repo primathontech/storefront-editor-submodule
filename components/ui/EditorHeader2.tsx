@@ -13,10 +13,9 @@ interface EditorHeader2Props {
   isSaving?: boolean;
 }
 
-// Feature flag: only fetch translations from API when explicitly enabled
-const isEditorChangesEnabled = (): boolean => {
-  const flag =
-    typeof process !== "undefined" && process.env?.ENABLE_EDITOR_CHANGES;
+// Feature flag: only save to API when explicitly enabled
+const isEditorChangesEnabled = () => {
+  const flag = process.env.NEXT_PUBLIC_ENABLE_EDITOR_CHANGES;
   return String(flag).toLowerCase() === "true";
 };
 
