@@ -380,7 +380,10 @@ export const useEditorState = create<EditorState>()(
             console.error("Section not found with ID:", sectionId);
             return {};
           }
-          sections[sectionIndex] = { ...sections[sectionIndex], ...updates };
+          sections[sectionIndex] = {
+            ...sections[sectionIndex],
+            ...updates,
+          };
           return { pageConfig: { ...state.pageConfig, sections } };
         });
       },

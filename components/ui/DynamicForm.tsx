@@ -4,7 +4,7 @@ import * as React from "react";
 import { Input } from "./Input";
 import { Checkbox } from "@/ui/atomic";
 import { Label } from "@/ui/atomic";
-import { SpacingInput } from "./SpacingInput";
+import { ResponsiveSpacingInput } from "./ResponsiveSpacingInput";
 import { SimpleSelect } from "./SimpleSelect";
 import { ImageInput } from "./ImageInput";
 import { FAQInput } from "./FAQInput";
@@ -190,17 +190,12 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
 
         case "spacing":
           return (
-            <SpacingInput
+            <ResponsiveSpacingInput
               key={key}
               label={fieldLabel}
-              value={value}
+              value={value || {}}
               onChange={handleChange}
-              min={fieldSchema.min}
-              max={fieldSchema.max}
-              step={fieldSchema.step}
               disabled={fieldDisabled}
-              error={fieldError}
-              helperText={fieldHelperText}
             />
           );
 

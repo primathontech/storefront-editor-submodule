@@ -108,8 +108,8 @@ export default function BuilderToolbar({
 
   // Get selected section and widget (before early return)
   const selectedSection =
-    selectedSectionId !== null && pageConfig?.sections
-      ? pageConfig.sections.find((s: any) => s.id === selectedSectionId)
+    selectedSectionId !== null && currentPageConfig?.sections
+      ? currentPageConfig.sections.find((s: any) => s.id === selectedSectionId)
       : null;
   const selectedSectionSchema =
     selectedSection && sectionRegistry[selectedSection.type];
@@ -155,10 +155,12 @@ export default function BuilderToolbar({
 
   const handleSectionSettingChange = (key: string, value: any) => {
     if (selectedSectionId === null) return;
-    const section = pageConfig.sections.find(
+    const currentConfig = currentPageConfig || pageConfig;
+    const section = currentConfig?.sections?.find(
       (s: any) => s.id === selectedSectionId
     );
     if (!section) return;
+
     updateSection(selectedSectionId, {
       settings: {
         ...section.settings,
@@ -555,27 +557,15 @@ export default function BuilderToolbar({
                                 {/* Section Header */}
                                 <SidebarMenuItem
                                   selected={isSelected}
-                                  // onClick={() => handleSectionSelect(section.id)}
-                                  className="group hover:!bg-transparent cursor-default"
+                                  className="group hover:!bg-transparent cursor-pointer"
                                 >
-                                  {/* <SidebarMenuButton> */}
-                                  <div className="flex-1 text-left min-w-0">
-                                    <span className="text-sm font-medium truncate">
-                                      {sectionSchema?.name || section.type}
-                                    </span>
-                                    {section.widgets.length > 0 && (
-                                      <span className="text-xs text-gray-500 ml-2">
-                                        ({section.widgets.length})
-                                      </span>
-                                    )}
-                                  </div>
                                   {/* Remove Section Button */}
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       removeSection(section.id);
                                     }}
-                                    className="ml-2 text-red-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-100"
+                                    className="ml-auto text-red-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-100"
                                     title="Remove section"
                                   >
                                     <svg
@@ -723,7 +713,7 @@ export default function BuilderToolbar({
             {/* Settings Content */}
             <div className="flex-1 overflow-y-auto p-6">
               {/* Section Settings */}
-              {selectedSection && selectedSectionSchema && !selectedWidget && (
+              {selectedSection && selectedSectionSchema && (
                 <DynamicForm
                   schema={convertSchemaToFormSchema(
                     selectedSectionSchema.settingsSchema
@@ -734,7 +724,11 @@ export default function BuilderToolbar({
                 />
               )}
 
+              <br />
+
               {renderDataSourceEditor()}
+
+              <br />
 
               {/* Widget Settings */}
               {selectedWidget && selectedWidgetSchema && (
