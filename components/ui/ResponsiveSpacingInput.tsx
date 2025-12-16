@@ -46,88 +46,42 @@ const ResponsiveSpacingInput = React.forwardRef<
     },
     ref
   ) => {
-    const updateBreakpoint = (
-      breakpoint: "mobile" | "tablet" | "desktop",
-      updates: Partial<ResponsiveSpacingValue["mobile"]>
-    ) => {
-      if (!onChange) return;
+    const updateBreakpoint = React.useCallback(
+      (
+        breakpoint: "mobile" | "tablet" | "desktop",
+        updates: Partial<ResponsiveSpacingValue["mobile"]>
+      ) => {
+        if (!onChange) return;
+        const current = value[breakpoint] || {};
+        onChange({
+          ...value,
+          [breakpoint]: {
+            ...current,
+            ...updates,
+          },
+        });
+      },
+      [value, onChange]
+    );
 
-      const current = value[breakpoint] || {};
-      const updated = {
-        ...value,
-        [breakpoint]: {
-          ...current,
-          ...updates,
-        },
-      };
+    const handlePaddingChange = React.useCallback(
+      (
+        breakpoint: "mobile" | "tablet" | "desktop",
+        padding: { top: number; right: number; bottom: number; left: number }
+      ) => {
+        updateBreakpoint(breakpoint, { padding });
+      },
+      [updateBreakpoint]
+    );
 
-      onChange(updated);
-    };
-
-    const updatePadding = (
-      breakpoint: "mobile" | "tablet" | "desktop",
-      padding: { top: number; right: number; bottom: number; left: number }
-    ) => {
-      updateBreakpoint(breakpoint, { padding });
-    };
-
-    const updateMargin = (
-      breakpoint: "mobile" | "tablet" | "desktop",
-      margin: { top: number; right: number; bottom: number; left: number }
-    ) => {
-      updateBreakpoint(breakpoint, { margin });
-    };
-
-    const getPadding = (breakpoint: "mobile" | "tablet" | "desktop") => {
-      const breakpointValue = value[breakpoint];
-      return (
-        breakpointValue?.padding || {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-        }
-      );
-    };
-
-    const getMargin = (breakpoint: "mobile" | "tablet" | "desktop") => {
-      const breakpointValue = value[breakpoint];
-      return (
-        breakpointValue?.margin || {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-        }
-      );
-    };
-
-    const BreakpointContent = ({
-      breakpoint,
-    }: {
-      breakpoint: "mobile" | "tablet" | "desktop";
-    }) => (
-      <div className="space-y-4">
-        <div>
-          <FourSidedSpacingInput
-            label="Padding"
-            value={getPadding(breakpoint)}
-            onChange={(padding) => updatePadding(breakpoint, padding)}
-            disabled={disabled}
-          />
-        </div>
-
-        {showMargin && (
-          <div>
-            <FourSidedSpacingInput
-              label="Margin"
-              value={getMargin(breakpoint)}
-              onChange={(margin) => updateMargin(breakpoint, margin)}
-              disabled={disabled}
-            />
-          </div>
-        )}
-      </div>
+    const handleMarginChange = React.useCallback(
+      (
+        breakpoint: "mobile" | "tablet" | "desktop",
+        margin: { top: number; right: number; bottom: number; left: number }
+      ) => {
+        updateBreakpoint(breakpoint, { margin });
+      },
+      [updateBreakpoint]
     );
 
     return (
@@ -159,15 +113,102 @@ const ResponsiveSpacingInput = React.forwardRef<
           </TabsList>
 
           <TabsContent value="desktop">
-            <BreakpointContent breakpoint="desktop" />
+            <div className="space-y-4">
+              <FourSidedSpacingInput
+                label="Padding"
+                value={
+                  value.desktop?.padding || {
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    left: 0,
+                  }
+                }
+                onChange={(padding) => handlePaddingChange("desktop", padding)}
+                disabled={disabled}
+              />
+              {showMargin && (
+                <FourSidedSpacingInput
+                  label="Margin"
+                  value={
+                    value.desktop?.margin || {
+                      top: 0,
+                      right: 0,
+                      bottom: 0,
+                      left: 0,
+                    }
+                  }
+                  onChange={(margin) => handleMarginChange("desktop", margin)}
+                  disabled={disabled}
+                />
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="tablet">
-            <BreakpointContent breakpoint="tablet" />
+            <div className="space-y-4">
+              <FourSidedSpacingInput
+                label="Padding"
+                value={
+                  value.tablet?.padding || {
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    left: 0,
+                  }
+                }
+                onChange={(padding) => handlePaddingChange("tablet", padding)}
+                disabled={disabled}
+              />
+              {showMargin && (
+                <FourSidedSpacingInput
+                  label="Margin"
+                  value={
+                    value.tablet?.margin || {
+                      top: 0,
+                      right: 0,
+                      bottom: 0,
+                      left: 0,
+                    }
+                  }
+                  onChange={(margin) => handleMarginChange("tablet", margin)}
+                  disabled={disabled}
+                />
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="mobile">
-            <BreakpointContent breakpoint="mobile" />
+            <div className="space-y-4">
+              <FourSidedSpacingInput
+                label="Padding"
+                value={
+                  value.mobile?.padding || {
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    left: 0,
+                  }
+                }
+                onChange={(padding) => handlePaddingChange("mobile", padding)}
+                disabled={disabled}
+              />
+              {showMargin && (
+                <FourSidedSpacingInput
+                  label="Margin"
+                  value={
+                    value.mobile?.margin || {
+                      top: 0,
+                      right: 0,
+                      bottom: 0,
+                      left: 0,
+                    }
+                  }
+                  onChange={(margin) => handleMarginChange("mobile", margin)}
+                  disabled={disabled}
+                />
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>
