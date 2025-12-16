@@ -191,7 +191,6 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
         case "spacing":
           return (
             <ResponsiveSpacingInput
-              key={key}
               label={fieldLabel}
               value={value || {}}
               onChange={handleChange}
@@ -249,7 +248,6 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
         case "image":
           return (
             <ImageInput
-              key={key}
               label={fieldLabel}
               value={value || { src: "", alt: "" }}
               onChange={handleChange}
@@ -269,7 +267,6 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
 
             return (
               <FAQInput
-                key={key}
                 label={fieldLabel}
                 value={actualFaqItems}
                 onChange={handleFaqTranslationChange}
@@ -306,7 +303,6 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
 
           return (
             <FAQInput
-              key={key}
               label={fieldLabel}
               value={faqDisplayItems}
               onChange={handleFaqChange}
@@ -324,7 +320,6 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
 
           return (
             <RichTextInput
-              key={key}
               label={fieldLabel}
               value={richTextDisplay}
               onChange={handleRichTextChange}
@@ -350,7 +345,6 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
 
             return (
               <ObjectArrayInput
-                key={key}
                 label={fieldLabel}
                 value={actualArray}
                 onChange={handleTranslationArrayChange}
@@ -392,7 +386,6 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
 
             return (
               <ObjectArrayInput
-                key={key}
                 label={fieldLabel}
                 value={objectArrayDisplay}
                 onChange={handleObjectArrayChange}
@@ -417,7 +410,6 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
 
             return (
               <ArrayInput
-                key={key}
                 label={fieldLabel}
                 value={actualArray}
                 onChange={handleArrayTranslationChange}
@@ -446,7 +438,6 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
 
           return (
             <ArrayInput
-              key={key}
               label={fieldLabel}
               value={arrayDisplay}
               onChange={handleArrayChange}
@@ -469,9 +460,11 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
         style={style}
         {...props}
       >
-        {Object.entries(schema).map(([key, fieldSchema]) =>
-          renderField(key, fieldSchema)
-        )}
+        {Object.entries(schema).map(([key, fieldSchema]) => (
+          <React.Fragment key={key}>
+            {renderField(key, fieldSchema)}
+          </React.Fragment>
+        ))}
       </div>
     );
   }

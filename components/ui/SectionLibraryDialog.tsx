@@ -31,8 +31,9 @@ export const SectionLibraryDialog: React.FC<SectionLibraryDialogProps> = ({
   onClose,
 }) => {
   const options = getAvailableSectionOptions();
-  const [selectedLibraryKey, setSelectedLibraryKey] =
-    React.useState<string | null>(null);
+  const [selectedLibraryKey, setSelectedLibraryKey] = React.useState<
+    string | null
+  >(null);
 
   const selected =
     (selectedLibraryKey &&
