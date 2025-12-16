@@ -66,7 +66,7 @@ export const Dialog: React.FC<DialogProps> = ({
           </button>
         </div>
 
-        <div className="max-h-[60vh] overflow-y-auto px-4 py-3">{children}</div>
+        <div className="max-h-[80vh] overflow-y-auto px-4 py-3">{children}</div>
 
         {footer && (
           <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-100">

@@ -35,8 +35,7 @@ import { sectionRegistry } from "@/cms/schemas/section-registry";
 import { widgetRegistry } from "@/cms/schemas/widget-registry";
 import { TranslationService } from "@/lib/i18n/translation-service";
 import { DATA_SOURCE_TYPES } from "@/lib/page-builder/models/page-config-types";
-import Dialog from "./Dialog";
-import { availableSectionsRegistry } from "@/registries/available-sections-registry";
+import { SectionLibraryDialog } from "./SectionLibraryDialog";
 import { useDataSourceOptions } from "../../hooks/useDataSourceOptions";
 
 interface BuilderToolbarProps {
@@ -133,15 +132,6 @@ export default function BuilderToolbar({
   if (!pageConfig || !Array.isArray(pageConfig.sections)) {
     return <div className="text-gray-500 p-4">No template loaded.</div>;
   }
-
-  // Helper function to create options from available sections registry
-  const getAvailableSectionOptions = () => {
-    const entries = availableSectionsRegistry.availableSections || {};
-    return Object.entries(entries).map(([key, section]: [string, any]) => ({
-      value: key,
-      label: section.name,
-    }));
-  };
 
   const handleCloseAddSectionModal = () => {
     setIsAddSectionModalOpen(false);
@@ -757,49 +747,14 @@ export default function BuilderToolbar({
         </div>
       )}
       {/* Add Section Modal */}
-      <Dialog
+      <SectionLibraryDialog
         open={isAddSectionModalOpen}
+        onConfirm={(selectedKey) => {
+          if (!selectedKey) return;
+          handleAddSectionFromLibrary(selectedKey);
+        }}
         onClose={handleCloseAddSectionModal}
-        title="Add section"
-        footer={
-          <>
-            <button
-              type="button"
-              onClick={handleCloseAddSectionModal}
-              className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleCloseAddSectionModal}
-              className="px-4 py-2 rounded text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700"
-            >
-              Done
-            </button>
-          </>
-        }
-      >
-        <p className="mb-3 text-xs text-gray-500">
-          Choose a section to add to your page. This is a visual preview only;
-          selection logic will be wired separately.
-        </p>
-        <div className="space-y-1">
-          {getAvailableSectionOptions().map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => handleAddSectionFromLibrary(option.value)}
-              className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-md border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-colors"
-            >
-              <span className="truncate">{option.label}</span>
-              <span className="text-[11px] text-gray-400 uppercase tracking-wide">
-                Section
-              </span>
-            </button>
-          ))}
-        </div>
-      </Dialog>
+      />
     </div>
   );
 }
