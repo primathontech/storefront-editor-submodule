@@ -61,7 +61,9 @@ export default function UnifiedEditorPage() {
   }, [params.id]);
 
   useEffect(() => {
-    if (!authState.themeId) return;
+    if (!authState.themeId) {
+      return;
+    }
 
     const loadData = async () => {
       try {
@@ -115,7 +117,9 @@ export default function UnifiedEditorPage() {
   const themeId = authState.themeId!;
 
   const findHomeTemplate = (theme: any) => {
-    if (!theme?.templateStructure?.length) return null;
+    if (!theme?.templateStructure?.length) {
+      return null;
+    }
 
     return (
       theme.templateStructure.find(
@@ -127,7 +131,9 @@ export default function UnifiedEditorPage() {
   };
 
   const handleSave = async () => {
-    if (!themeId || !templateMeta?.id) return;
+    if (!themeId || !templateMeta?.id) {
+      return;
+    }
 
     setIsSaving(true);
     try {

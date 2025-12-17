@@ -28,7 +28,9 @@ const findCompatibleDataSource = (
   widgetType: string
 ): string | null => {
   const requiredType = WIDGET_DATA_SOURCE_MAP[widgetType];
-  if (!requiredType || !pageConfig.dataSources) return null;
+  if (!requiredType || !pageConfig.dataSources) {
+    return null;
+  }
 
   // Look for existing data source of the same type
   for (const [key, source] of Object.entries(pageConfig.dataSources)) {
@@ -176,7 +178,9 @@ export const useEditorState = create<EditorState>()(
 
       updateRouteHandle: (handle) => {
         const currentContext = get().routeContext;
-        if (!currentContext) return;
+        if (!currentContext) {
+          return;
+        }
 
         const updatedContext = { ...currentContext };
         if (currentContext.type === "product") {
@@ -686,12 +690,22 @@ export const useEditorState = create<EditorState>()(
       // Route helpers
       getRouteHandleKey: () => {
         const ctx = get().routeContext;
-        if (!ctx) return null;
-        if (ctx.type === "product") return "productHandle";
-        if (ctx.type === "collection") return "collectionHandle";
+        if (!ctx) {
+          return null;
+        }
+        if (ctx.type === "product") {
+          return "productHandle";
+        }
+        if (ctx.type === "collection") {
+          return "collectionHandle";
+        }
         if (typeof ctx === "object") {
-          if ("productHandle" in ctx) return "productHandle";
-          if ("collectionHandle" in ctx) return "collectionHandle";
+          if ("productHandle" in ctx) {
+            return "productHandle";
+          }
+          if ("collectionHandle" in ctx) {
+            return "collectionHandle";
+          }
         }
         return null;
       },

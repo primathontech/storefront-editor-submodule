@@ -13,13 +13,10 @@ interface EditorHeader2Props {
   isSaving?: boolean;
 }
 
-// Feature flag: only fetch translations from API when explicitly enabled
-const isEditorChangesEnabled = (): boolean => {
-  // TODO: add environment variable for client side editor changes
-  // const flag =
-  //   typeof process !== "undefined" && process.env?.NEXT_PUBLIC_ENABLE_EDITOR_CHANGES;
-  // return String(flag).toLowerCase() === "true";
-  return true;
+// Feature flag: only save to API when explicitly enabled
+const isEditorChangesEnabled = () => {
+  const flag = process.env.NEXT_PUBLIC_ENABLE_EDITOR_CHANGES;
+  return String(flag).toLowerCase() === "true";
 };
 
 const EditorHeader2: React.FC<EditorHeader2Props> = ({
@@ -41,7 +38,9 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedTemplateId = e.target.value;
-    if (!selectedTemplateId || !theme || !onTemplateChange) return;
+    if (!selectedTemplateId || !theme || !onTemplateChange) {
+      return;
+    }
 
     for (const group of theme.templateStructure) {
       const foundTemplate = group.templates?.find(

@@ -36,13 +36,17 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
 
   // Load translations when component mounts or dependencies change
   useEffect(() => {
-    if (!templateMeta?.id || !themeId) return;
+    if (!templateMeta?.id || !themeId) {
+      return;
+    }
     getTranslations(themeId, templateMeta.id, language);
   }, [templateMeta?.id, themeId, language]);
 
   // Scroll focused input into view
   useEffect(() => {
-    if (!focusedPath) return;
+    if (!focusedPath) {
+      return;
+    }
 
     // Find the element with matching sectionKey
     const elements = document.querySelectorAll("[data-section-key]");
@@ -75,7 +79,9 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
     type?: "array" | "objectArray";
     fields?: string[];
   }> => {
-    if (!obj || typeof obj !== "object") return [];
+    if (!obj || typeof obj !== "object") {
+      return [];
+    }
 
     const result: Array<{
       path: string[];
@@ -126,10 +132,14 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   };
 
   const renderFlatInputs = () => {
-    if (!templateTranslations) return null;
+    if (!templateTranslations) {
+      return null;
+    }
 
     const templateData = translations[templateMeta.id];
-    if (!templateData) return null;
+    if (!templateData) {
+      return null;
+    }
 
     const flatTranslations = flattenTranslations({
       [templateMeta.id]: templateData,
@@ -249,7 +259,9 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
                       target.style.display = "none";
                       const nextElement =
                         target.nextElementSibling as HTMLElement;
-                      if (nextElement) nextElement.style.display = "block";
+                      if (nextElement) {
+                        nextElement.style.display = "block";
+                      }
                     }}
                   />
                   <div className="hidden text-sm text-red-500">
@@ -264,15 +276,20 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
     });
   };
 
-  if (isLoading) return <div>Loading translation...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!templateMeta || !themeId)
+  if (isLoading) {
+    return <div>Loading translation...</div>;
+  }
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+  if (!templateMeta || !themeId) {
     return (
       <div>
         No template or theme selected. Please select both from the dropdown
         above.
       </div>
     );
+  }
 
   const supportedLanguages = templateMeta?.supportedLanguages || ["en"];
   const showLanguageSwitcher =

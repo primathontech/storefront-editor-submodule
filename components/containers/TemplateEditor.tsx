@@ -79,7 +79,9 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
   // Load merchant ID, template, and i18n data in a single useEffect
   useEffect(() => {
-    if (!templateMeta?.id || !themeId || !routeContext) return;
+    if (!templateMeta?.id || !themeId || !routeContext) {
+      return;
+    }
 
     let isCancelled = false;
 
@@ -92,7 +94,9 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
         // 1. Load merchant ID first
         const merchantNameFromAPI = await api.editor.getMerchantName();
-        if (isCancelled) return;
+        if (isCancelled) {
+          return;
+        }
 
         // 2. Load translations for default locale
         await getTranslations(themeId, templateMeta.id, language);
@@ -103,7 +107,9 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
           routeContext,
           templateMeta.variant
         );
-        if (isCancelled) return;
+        if (isCancelled) {
+          return;
+        }
         setPageConfig(template);
 
         // Close settings overlay when template changes
@@ -117,7 +123,9 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
           routeContext,
           merchantName: merchantNameFromAPI,
         });
-        if (isCancelled) return;
+        if (isCancelled) {
+          return;
+        }
         setPageData(realData);
 
         // 5. Process Styles
@@ -128,7 +136,9 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
           merchantName: merchantNameFromAPI,
           pageConfig: template.pageConfig,
         });
-        if (isCancelled) return;
+        if (isCancelled) {
+          return;
+        }
         setThemeStyles(styles);
       } catch (err) {
         console.error("Template pipeline error:", err);
@@ -142,7 +152,9 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
           });
         }
       } finally {
-        if (!isCancelled) setIsLoadingData(false);
+        if (!isCancelled) {
+          setIsLoadingData(false);
+        }
       }
     };
 
@@ -203,7 +215,9 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
   // Collect parent stylesheets and style tags for iframe
   const headContent = useMemo(() => {
-    if (typeof document === "undefined") return "";
+    if (typeof document === "undefined") {
+      return "";
+    }
 
     const links = Array.from(
       document.querySelectorAll('link[rel="stylesheet"]')
@@ -221,7 +235,9 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
   // Copy font classes from root HTML to iframe HTML
   // Stylesheets are already copied via headContent, we just need the classes
   const rootHtmlClassName = useMemo(() => {
-    if (typeof document === "undefined") return "";
+    if (typeof document === "undefined") {
+      return "";
+    }
     return document.documentElement.className || "";
   }, []);
   const editorPreviewClass = "editor-preview";

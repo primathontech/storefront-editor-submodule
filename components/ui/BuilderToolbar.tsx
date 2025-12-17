@@ -160,13 +160,19 @@ export default function BuilderToolbar({
   };
 
   const handleWidgetSettingChange = (key: string, value: any) => {
-    if (selectedSectionId === null || selectedWidgetId === null) return;
+    if (selectedSectionId === null || selectedWidgetId === null) {
+      return;
+    }
     const section = pageConfig.sections.find(
       (s: any) => s.id === selectedSectionId
     );
-    if (!section) return;
+    if (!section) {
+      return;
+    }
     const widget = section.widgets.find((w: any) => w.id === selectedWidgetId);
-    if (!widget) return;
+    if (!widget) {
+      return;
+    }
 
     updateWidget(selectedSectionId, selectedWidgetId, {
       settings: {

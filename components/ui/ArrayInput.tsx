@@ -40,12 +40,16 @@ const ArrayInput = React.forwardRef<HTMLDivElement, ArrayInputProps>(
     const safeValue = Array.isArray(value) ? value : [];
 
     const addItem = () => {
-      if (safeValue.length >= maxItems) return;
+      if (safeValue.length >= maxItems) {
+        return;
+      }
       onChange([...safeValue, ""]);
     };
 
     const removeItem = (index: number) => {
-      if (safeValue.length <= minItems) return;
+      if (safeValue.length <= minItems) {
+        return;
+      }
       onChange(safeValue.filter((_, i) => i !== index));
     };
 
