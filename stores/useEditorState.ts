@@ -265,18 +265,31 @@ export const useEditorState = create<EditorState>()(
         }
 
         const uniqueId = nanoid(6);
-        const sectionId = `${existingBlock.id}-${uniqueId}`;
-        const widgets =
-          (existingBlock.widgets || []).map((widget: any) => ({
+        const {
+          id,
+          name,
+          type,
+          isCommon: isCommonFlag,
+          settings,
+          widgets: libraryWidgets = [],
+        } = existingBlock as any;
+
+        const isCommon = isCommonFlag === true;
+
+        const sectionId = `${id}-${uniqueId}`;
+        const widgets = libraryWidgets.map((widget: any) => ({
             ...widget,
             id: `${widget.id}-${uniqueId}`,
-          })) || [];
+        }));
 
         const extraDataSources: Record<string, any> = {};
 
         const sectionForPage = {
-          ...existingBlock,
           id: sectionId,
+          name,
+          type,
+          isCommon,
+          settings,
           widgets: widgets.map((widget: any) => {
             if (widget.dataSourceTemplate) {
               const baseKey = widget.id || widget.name || "dataSource";
@@ -308,7 +321,6 @@ export const useEditorState = create<EditorState>()(
         const editorState = get();
         const translationStore = useDualTranslationStore.getState();
         const templateId = editorState.templateId;
-        const isCommon = existingBlock.isCommon === true;
         const uniqueSectionKey = sectionId.replace(/-/g, "_");
 
         // Process template-specific sections (common sections use existing common.* keys)
