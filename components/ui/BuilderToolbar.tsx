@@ -192,8 +192,8 @@ export default function BuilderToolbar({
   };
 
   const renderDataSourceEditor = () => {
-    // TODO: fix it after common data-layer addtion 
-   
+    // TODO: fix it after common data-layer addtion
+
     // if (!selectedWidget || !selectedDataSource) return null;
 
     // const type = selectedDataSource.type;
@@ -722,7 +722,7 @@ export default function BuilderToolbar({
                 />
               )}
 
-            {/*  <br />
+              {/*  <br />
 
               {renderDataSourceEditor()}
 

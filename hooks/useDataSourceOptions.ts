@@ -5,9 +5,9 @@ import { api } from "../services/api";
 
 type DataSourceType =
   // | typeof DATA_SOURCE_TYPES.COLLECTION_BY_HANDLES
-  | typeof DATA_SOURCE_TYPES.PRODUCT
-  // | typeof DATA_SOURCE_TYPES.PRODUCTS_BY_HANDLES
-  // | typeof DATA_SOURCE_TYPES.PRODUCT_RECOMMENDATIONS;
+  typeof DATA_SOURCE_TYPES.PRODUCT;
+// | typeof DATA_SOURCE_TYPES.PRODUCTS_BY_HANDLES
+// | typeof DATA_SOURCE_TYPES.PRODUCT_RECOMMENDATIONS;
 
 interface UseDataSourceOptionsResult {
   options: SimpleSelectOption[];
