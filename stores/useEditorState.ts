@@ -3,6 +3,10 @@ import { devtools } from "zustand/middleware";
 import { nanoid } from "nanoid";
 import { sectionRegistry } from "@/cms/schemas/section-registry";
 import { widgetRegistry } from "@/cms/schemas/widget-registry";
+import { availableSectionsRegistry } from "@/registries/available-sections-registry";
+import { useDualTranslationStore } from "./dualTranslationStore";
+import { processSectionWidgets } from "../utils/section-translation-utils";
+import { translationUtils } from "./dualTranslationStore";
 
 // Widget to Data Source mapping
 const WIDGET_DATA_SOURCE_MAP: Record<string, string> = {
@@ -41,9 +45,12 @@ const findCompatibleDataSource = (
 export interface EditorState {
   // Page Configuration
   pageConfig: any | null;
+  pendingPageConfig: any | null;
   pageData: any | null;
   themeId: string; // Add themeId to state
+  templateId: string | null; // Template ID for translation namespace
   routeContext: any; // Add routeContext to state
+  pageDataStale: boolean;
 
   // UI State
   selectedSectionId: string | null;
@@ -55,12 +62,15 @@ export interface EditorState {
 
   // Actions
   setPageConfig: (config: any) => void;
+  setPendingPageConfig: (config: any | null) => void;
   updatePageConfig: (updater: (prev: any) => any) => void;
   setThemeId: (themeId: string) => void; // Add setThemeId action
+  setTemplateId: (templateId: string | null) => void; // Add setTemplateId action
   setRouteContext: (context: any) => void; // Add setRouteContext action
   updateRouteHandle: (handle: string) => void; // Add updateRouteHandle action
 
   setPageData: (data: any) => void;
+  setPageDataStale: (stale: boolean) => void;
   setExpandedSections: (expandedSections: Set<string>) => void;
 
   // Selection Actions
@@ -72,11 +82,18 @@ export interface EditorState {
   setDevice: (device: "desktop" | "mobile" | "fullscreen") => void;
 
   // Section Actions
-  addSection: (sectionKey: string, insertIndex?: number) => void;
+  addSection: (
+    section: any,
+    insertIndex?: number,
+    extraDataSources?: Record<string, any>
+  ) => void;
+  addSectionFromLibrary: (
+    libraryKey: string,
+    insertAfterIndex?: number | null
+  ) => void;
   updateSection: (sectionId: string, updates: any) => void;
   updateSectionSettings: (sectionId: string, key: string, value: any) => void;
   // Widget Actions
-  addWidget: (sectionId: string, widgetKey: string) => void;
   updateWidget: (sectionId: string, widgetId: string, updates: any) => void;
   updateWidgetSettings: (
     sectionId: string,
@@ -109,8 +126,11 @@ export const useEditorState = create<EditorState>()(
     (set, get) => ({
       // Initial State - No default template
       pageConfig: null,
+      pendingPageConfig: null,
       pageData: null,
+      pageDataStale: false,
       themeId: null, // Default theme
+      templateId: null, // Template ID
       routeContext: null, // Default route context
       selectedSectionId: null,
       selectedWidgetId: null,
@@ -124,6 +144,10 @@ export const useEditorState = create<EditorState>()(
         set({ pageConfig: config });
       },
 
+      setPendingPageConfig: (config) => {
+        set({ pendingPageConfig: config });
+      },
+
       setExpandedSections: (expandedSections: Set<string>) => {
         set({ expandedSections });
       },
@@ -133,11 +157,19 @@ export const useEditorState = create<EditorState>()(
       },
 
       setPageData: (data) => {
-        set({ pageData: data });
+        set({ pageData: data, pageDataStale: false });
+      },
+
+      setPageDataStale: (stale) => {
+        set({ pageDataStale: stale });
       },
 
       setThemeId: (themeId) => {
         set({ themeId });
+      },
+
+      setTemplateId: (templateId) => {
+        set({ templateId });
       },
 
       setRouteContext: (context) => {
@@ -198,53 +230,149 @@ export const useEditorState = create<EditorState>()(
       setDevice: (device) => set({ device }),
 
       // Section Actions
-      addSection: (sectionKey, insertIndex) => {
-        console.log("Adding section:", sectionKey, "at index:", insertIndex);
-        const sectionSchema = sectionRegistry[sectionKey];
-        if (!sectionSchema) {
-          console.error("Section schema not found for:", sectionKey);
-          console.log("Available sections:", Object.keys(sectionRegistry));
-          return;
-        }
-
-        const newSection = {
-          id: nanoid(),
-          type: sectionKey,
-          settings: Object.fromEntries(
-            Object.entries(sectionSchema.settingsSchema).map(([k, v]) => [
-              k,
-              v.default,
-            ])
-          ),
-          widgets: [],
-        };
-
+      addSection: (section, insertIndex, extraDataSources) => {
         set((state) => {
-          console.log(
-            "Current sections before adding:",
-            state.pageConfig?.sections.length
-          );
-          const sections = [...(state.pageConfig?.sections || [])];
+          const prevPageConfig = state.pageConfig || {};
+          const sections = [...(prevPageConfig.sections || [])];
           const newIndex =
             insertIndex !== undefined ? insertIndex : sections.length;
+          sections.splice(newIndex, 0, section);
 
-          if (insertIndex !== undefined) {
-            sections.splice(insertIndex, 0, newSection);
-          } else {
-            sections.push(newSection);
-          }
+          const dataSources = {
+            ...(prevPageConfig.dataSources || {}),
+            ...(extraDataSources || {}),
+          };
 
-          // Update expanded sections to include the new section
           const newExpandedSections = new Set(state.expandedSections);
-          newExpandedSections.add(newSection.id);
+          newExpandedSections.add(section.id);
 
           return {
-            pageConfig: { ...state.pageConfig, sections },
-            selectedSectionId: newSection.id,
-            selectedWidgetId: null,
+            pageConfig: { ...prevPageConfig, sections, dataSources },
+            selectedSectionId: section.id,
+            selectedWidgetId: section.widgets?.[0]?.id ?? null,
             expandedSections: newExpandedSections,
             showSettingsDrawer: true,
           };
+        });
+      },
+
+      addSectionFromLibrary: (libraryKey, insertAfterIndex) => {
+        const entries = availableSectionsRegistry.availableSections || {};
+        const existingBlock = (entries as any)[libraryKey];
+        if (!existingBlock) {
+          console.error("Available section not found for key:", libraryKey);
+          return;
+        }
+
+        const uniqueId = nanoid(6);
+        const sectionId = `${existingBlock.id}-${uniqueId}`;
+        const widgets =
+          (existingBlock.widgets || []).map((widget: any) => ({
+            ...widget,
+            id: `${widget.id}-${uniqueId}`,
+          })) || [];
+
+        const extraDataSources: Record<string, any> = {};
+
+        const sectionForPage = {
+          ...existingBlock,
+          id: sectionId,
+          widgets: widgets.map((widget: any) => {
+            if (widget.dataSourceTemplate) {
+              const baseKey = widget.id || widget.name || "dataSource";
+              const safeBase = String(baseKey)
+                .toLowerCase()
+                .replace(/[^a-z0-9_]/g, "_");
+              const dataSourceKey = `${safeBase}_${uniqueId}`;
+
+              extraDataSources[dataSourceKey] = {
+                type: widget.dataSourceTemplate.type,
+                params: widget.dataSourceTemplate.params || {},
+                required:
+                  widget.dataSourceTemplate.required === undefined
+                    ? false
+                    : widget.dataSourceTemplate.required,
+              };
+
+              return {
+                ...widget,
+                dataSourceKey,
+              };
+            }
+
+            return widget;
+          }),
+        };
+
+        // Process translations: remap keys and create translations
+        const editorState = get();
+        const translationStore = useDualTranslationStore.getState();
+        const templateId = editorState.templateId;
+        const isCommon = existingBlock.isCommon === true;
+        const uniqueSectionKey = sectionId.replace(/-/g, "_");
+
+        // Process template-specific sections (common sections use existing common.* keys)
+        if (!isCommon && templateId) {
+          const { remappedWidgets, translationKeys, oldSectionPattern } =
+            processSectionWidgets(
+              sectionForPage.widgets,
+              uniqueSectionKey,
+              templateId,
+              isCommon
+            );
+
+          sectionForPage.widgets = remappedWidgets;
+
+          // Create translations if section keys found
+          if (translationKeys.length > 0 && oldSectionPattern) {
+            translationStore.createSectionTranslations(
+              translationKeys,
+              existingBlock.defaultTranslations || { en: {} },
+              translationStore.language || "en",
+              templateId,
+              oldSectionPattern,
+              uniqueSectionKey
+            );
+          }
+        }
+
+        const hasDynamicData = Object.keys(extraDataSources).length > 0;
+
+        // Compute concrete insert index once so both paths share the same logic
+        const baseForIndex = editorState.pageConfig || {};
+        const sectionsForIndex = [...(baseForIndex.sections || [])];
+        const currentLengthForIndex = sectionsForIndex.length;
+        const insertIndex =
+          insertAfterIndex !== null && insertAfterIndex !== undefined
+            ? Math.min(insertAfterIndex + 1, currentLengthForIndex)
+            : currentLengthForIndex === 0
+              ? 0
+              : undefined;
+
+        // For purely static sections (no data sources), commit directly via addSection (no refetch)
+        if (!hasDynamicData) {
+          editorState.addSection(sectionForPage, insertIndex);
+          return;
+        }
+
+        // For sections that introduce data sources, stage config and refetch
+        const baseConfig =
+          editorState.pendingPageConfig || editorState.pageConfig || {};
+        const sections = [...(baseConfig.sections || [])];
+        const targetIndex =
+          insertIndex !== undefined ? insertIndex : sections.length;
+        sections.splice(targetIndex, 0, sectionForPage);
+
+        const dataSources = {
+          ...(baseConfig.dataSources || {}),
+          ...(extraDataSources || {}),
+        };
+
+        const nextConfig = { ...baseConfig, sections, dataSources };
+
+        set({
+          pendingPageConfig: nextConfig,
+          pageDataStale: true,
         });
       },
 
@@ -256,7 +384,10 @@ export const useEditorState = create<EditorState>()(
             console.error("Section not found with ID:", sectionId);
             return {};
           }
-          sections[sectionIndex] = { ...sections[sectionIndex], ...updates };
+          sections[sectionIndex] = {
+            ...sections[sectionIndex],
+            ...updates,
+          };
           return { pageConfig: { ...state.pageConfig, sections } };
         });
       },
@@ -283,15 +414,68 @@ export const useEditorState = create<EditorState>()(
       // Remove Section
       removeSection: (sectionId) => {
         set((state) => {
-          const sections = [...(state.pageConfig?.sections || [])];
+          const baseConfig = state.pendingPageConfig || state.pageConfig || {};
+          const sections = [...(baseConfig.sections || [])];
           const sectionIndex = sections.findIndex((s) => s.id === sectionId);
           if (sectionIndex === -1) {
             console.error("Section not found with ID:", sectionId);
             return {};
           }
+
+          const sectionToRemove = sections[sectionIndex];
+
+          // Remove section translations
+          const editorState = get();
+          const translationStore = useDualTranslationStore.getState();
+          const templateId = editorState.templateId;
+          if (templateId) {
+            translationStore.removeSectionTranslations(sectionId, templateId);
+          }
+
+          // Collect data source keys from this section's widgets
+          const dataSourceKeys = (sectionToRemove.widgets || [])
+            .filter((widget: any) => widget.dataSourceKey)
+            .map((widget: any) => widget.dataSourceKey);
+
+          // Check if other sections use these data sources
+          const otherSections = sections.filter((s) => s.id !== sectionId);
+          const usedDataSourceKeys = new Set<string>();
+          otherSections.forEach((section: any) => {
+            (section.widgets || []).forEach((widget: any) => {
+              if (widget.dataSourceKey) {
+                usedDataSourceKeys.add(widget.dataSourceKey);
+              }
+            });
+          });
+
+          // Remove unused data sources
+          const dataSources = { ...(baseConfig.dataSources || {}) };
+          let hasRemovedDataSources = false;
+          dataSourceKeys.forEach((key: string) => {
+            if (!usedDataSourceKeys.has(key)) {
+              delete dataSources[key];
+              hasRemovedDataSources = true;
+            }
+          });
+
+          // Remove the section
           sections.splice(sectionIndex, 1);
+
+          const nextConfig = { ...baseConfig, sections, dataSources };
+
+          // If we touched data sources, stage config and refetch; otherwise commit directly
+          if (hasRemovedDataSources) {
+            return {
+              pendingPageConfig: nextConfig,
+              selectedSectionId: null,
+              selectedWidgetId: null,
+              showSettingsDrawer: false,
+              pageDataStale: true,
+            };
+          }
+
           return {
-            pageConfig: { ...state.pageConfig, sections },
+            pageConfig: nextConfig,
             selectedSectionId: null,
             selectedWidgetId: null,
             showSettingsDrawer: false,
@@ -300,85 +484,6 @@ export const useEditorState = create<EditorState>()(
       },
 
       // Widget Actions
-      addWidget: (sectionId, widgetKey) => {
-        console.log("Adding widget:", widgetKey, "to section:", sectionId);
-        const widgetSchema = widgetRegistry[widgetKey];
-        if (!widgetSchema) {
-          console.error("Widget schema not found for:", widgetKey);
-          return;
-        }
-
-        set((state) => {
-          // Determine data source for this widget
-          let dataSourceKey: string | null = null;
-          const updatedDataSources = {
-            ...(state.pageConfig?.dataSources || {}),
-          };
-
-          // First, try to find existing compatible data source
-          const existingDataSource = findCompatibleDataSource(
-            state.pageConfig || {},
-            widgetKey
-          );
-          if (existingDataSource) {
-            dataSourceKey = existingDataSource;
-            console.log("Reusing existing data source:", existingDataSource);
-          } else {
-            // Create new data source
-            const requiredType = WIDGET_DATA_SOURCE_MAP[widgetKey];
-            if (requiredType) {
-              dataSourceKey = generateDataSourceKey(widgetKey);
-              updatedDataSources[dataSourceKey] = {
-                type: requiredType,
-                params: {},
-                required: false,
-              };
-              console.log(
-                "Created new data source:",
-                dataSourceKey,
-                "of type:",
-                requiredType
-              );
-            }
-          }
-
-          const newWidget = {
-            id: nanoid(),
-            type: widgetKey,
-            name: widgetSchema.name || widgetKey,
-            dataSourceKey,
-            settings: Object.fromEntries(
-              Object.entries(widgetSchema.settingsSchema).map(([k, v]) => [
-                k,
-                v.default,
-              ])
-            ),
-          };
-
-          console.log("New widget with data source:", newWidget);
-
-          const sections = [...(state.pageConfig?.sections || [])];
-          const sectionIndex = sections.findIndex((s) => s.id === sectionId);
-          if (sectionIndex === -1) {
-            console.error("Section not found with ID:", sectionId);
-            return {};
-          }
-          const section = { ...sections[sectionIndex] };
-          section.widgets = [...section.widgets, newWidget];
-          sections[sectionIndex] = section;
-
-          return {
-            pageConfig: {
-              ...state.pageConfig,
-              sections,
-              dataSources: updatedDataSources,
-            },
-            selectedWidgetId: newWidget.id,
-            showSettingsDrawer: true,
-          };
-        });
-      },
-
       updateWidget: (sectionId, widgetId, updates) => {
         set((state) => {
           const sections = [...(state.pageConfig?.sections || [])];
@@ -498,18 +603,25 @@ export const useEditorState = create<EditorState>()(
       },
 
       updateDataSource: (key, updates) => {
-        set((state) => ({
-          pageConfig: {
-            ...state.pageConfig,
-            dataSources: {
-              ...state.pageConfig?.dataSources,
-              [key]: {
-                ...state.pageConfig?.dataSources[key],
-                ...updates,
-              },
+        set((state) => {
+          const baseConfig = state.pendingPageConfig || state.pageConfig || {};
+          const currentDataSources = baseConfig.dataSources || {};
+          const nextDataSources = {
+            ...currentDataSources,
+            [key]: {
+              ...currentDataSources[key],
+              ...updates,
             },
-          },
-        }));
+          };
+
+          return {
+            pendingPageConfig: {
+              ...baseConfig,
+              dataSources: nextDataSources,
+            },
+            pageDataStale: true,
+          };
+        });
       },
 
       removeDataSource: (key) => {

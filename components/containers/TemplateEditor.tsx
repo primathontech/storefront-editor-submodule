@@ -35,13 +35,18 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
 }) => {
   const {
     pageConfig,
+    pendingPageConfig,
     setPageConfig,
     pageData,
     setPageData,
+    pageDataStale,
+    setPageDataStale,
+    setPendingPageConfig,
     setSelectedSection,
     setSelectedWidget,
     setShowSettingsDrawer,
     setThemeId,
+    setTemplateId,
     routeContext,
     setRouteContext,
     updateRouteHandle,
@@ -64,7 +69,13 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
   useEffect(() => {
     setRouteContext(templateMeta.routeContext);
-  }, [setRouteContext, templateMeta?.routeContext]);
+    setTemplateId(templateMeta.id);
+  }, [
+    setRouteContext,
+    setTemplateId,
+    templateMeta?.routeContext,
+    templateMeta?.id,
+  ]);
 
   // Load merchant ID, template, and i18n data in a single useEffect
   useEffect(() => {
@@ -153,6 +164,54 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
       isCancelled = true;
     };
   }, [templateMeta?.id, themeId, routeContext]);
+
+  // Refetch data when editor marks page data as stale (e.g., new dynamic section)
+  useEffect(() => {
+    const refetchData = async () => {
+      const configForFetch = pendingPageConfig || pageConfig;
+      if (!configForFetch || !themeId || !routeContext || !pageDataStale)
+        return;
+
+      let isCancelled = false;
+      setIsLoadingData(true);
+
+      try {
+        const merchantNameFromAPI = await api.editor.getMerchantName();
+        if (isCancelled) return;
+
+        const realData = await api.editor.fetchEditorData({
+          pageConfig: configForFetch,
+          routeContext,
+          merchantName: merchantNameFromAPI,
+        });
+        if (isCancelled) return;
+        setPageData(realData);
+        if (pendingPageConfig) {
+          setPageConfig(pendingPageConfig);
+          setPendingPageConfig(null);
+        }
+      } catch (err) {
+        console.error("Error refetching editor data after config change:", err);
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingData(false);
+          setPageDataStale(false);
+        }
+      }
+    };
+
+    refetchData();
+  }, [
+    pageConfig,
+    pendingPageConfig,
+    routeContext,
+    themeId,
+    pageDataStale,
+    setPageData,
+    setPageDataStale,
+    setPageConfig,
+    setPendingPageConfig,
+  ]);
 
   // Collect parent stylesheets and style tags for iframe
   const headContent = useMemo(() => {
@@ -314,14 +373,32 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
           mountTarget="#mountHere"
         >
           <div id="website-canvas">
-            {pageData && !isLoadingData ? (
+            {isLoadingData && pageData && (
+              <>
+                <style>{`
+                  @keyframes editor-progress-indeterminate {
+                    0% { transform: translateX(-100%); }
+                    50% { transform: translateX(0%); }
+                    100% { transform: translateX(100%); }
+                  }
+                `}</style>
+                <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-2">
+                  <div
+                    className="h-full w-1/3 bg-gradient-to-r from-blue-500 via-sky-400 to-blue-600"
+                    style={{
+                      animation:
+                        "editor-progress-indeterminate 1.2s ease-in-out infinite",
+                    }}
+                  />
+                </div>
+              </>
+            )}
+            {pageData ? (
               renderedLayout
             ) : (
               <div className="flex items-center justify-center h-64">
                 <div className="text-gray-500">
-                  {isLoadingData
-                    ? "Loading real data..."
-                    : "Loading preview..."}
+                  {isLoadingData ? "Loading data..." : "Loading preview..."}
                 </div>
               </div>
             )}

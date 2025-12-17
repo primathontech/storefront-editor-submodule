@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { api } from "../services/api";
+import { createSectionTranslations } from "../utils/section-translation-utils";
 
 interface DualTranslationState {
   // Public interface (same as original store)
@@ -29,6 +30,17 @@ interface DualTranslationState {
     language: string
   ) => Promise<void>;
   saveTranslations: (themeId: string, templateId: string) => Promise<void>;
+
+  // Section Translation Actions
+  createSectionTranslations: (
+    translationKeys: string[],
+    defaultTranslations: Record<string, Record<string, any>>,
+    language: string,
+    templateId: string,
+    oldSectionPattern: string,
+    uniqueSectionKey: string
+  ) => void;
+  removeSectionTranslations: (sectionId: string, templateId: string) => void;
 }
 
 // Helper function to flatten object and get all paths
@@ -242,6 +254,97 @@ export const useDualTranslationStore = create<DualTranslationState>(
       } finally {
         set({ isSaving: false });
       }
+    },
+
+    // Section Translation Actions
+    createSectionTranslations: (
+      translationKeys: string[],
+      defaultTranslations: Record<string, Record<string, any>>,
+      language: string,
+      templateId: string,
+      oldSectionPattern: string,
+      uniqueSectionKey: string
+    ) => {
+      const state = get();
+
+      // Create new translations from section library defaults
+      const newTranslations = createSectionTranslations(
+        translationKeys,
+        defaultTranslations,
+        language,
+        templateId,
+        oldSectionPattern,
+        uniqueSectionKey
+      );
+
+      // Merge into templateTranslations
+      const updatedTemplateTranslations = deepMerge(
+        state.templateTranslations,
+        newTranslations
+      );
+
+      // Update source map
+      const updatedSourceMap = new Map(state.translationSourceMap);
+      flattenObject(newTranslations).forEach((path) => {
+        updatedSourceMap.set(path.join("."), "template");
+      });
+
+      // Merge with common translations
+      const mergedTranslations = deepMerge(
+        state.commonTranslations,
+        updatedTemplateTranslations
+      );
+
+      set({
+        templateTranslations: updatedTemplateTranslations,
+        translations: mergedTranslations,
+        translationSourceMap: updatedSourceMap,
+        hasUnsavedChanges: true,
+      });
+    },
+
+    // Remove section translations when section is deleted
+    removeSectionTranslations: (sectionId: string, templateId: string) => {
+      const state = get();
+      const uniqueSectionKey = sectionId.replace(/-/g, "_");
+      const sectionPath = `sections.${uniqueSectionKey}`;
+
+      // Early return if no translations exist
+      if (!state.templateTranslations.sections?.[uniqueSectionKey]) {
+        return;
+      }
+
+      // Remove section from templateTranslations.sections
+      const { [uniqueSectionKey]: removed, ...remainingSections } =
+        state.templateTranslations.sections || {};
+
+      const updatedTemplateTranslations = {
+        ...state.templateTranslations,
+        sections:
+          Object.keys(remainingSections).length > 0
+            ? remainingSections
+            : undefined,
+      };
+
+      if (!updatedTemplateTranslations.sections) {
+        delete updatedTemplateTranslations.sections;
+      }
+
+      // Remove from source map
+      const updatedSourceMap = new Map(state.translationSourceMap);
+      Array.from(updatedSourceMap.keys())
+        .filter((key) => key.startsWith(sectionPath))
+        .forEach((key) => updatedSourceMap.delete(key));
+
+      set({
+        templateTranslations: updatedTemplateTranslations,
+        translations: deepMerge(
+          state.commonTranslations,
+          updatedTemplateTranslations
+        ),
+        translationSourceMap: updatedSourceMap,
+        hasUnsavedChanges: true,
+      });
     },
   })
 );

@@ -243,6 +243,34 @@ export class EditorAPI {
       return { isValid: false, error: "Failed to validate merchant" };
     }
   }
+
+  /**
+   * Fetch data source options (collections or products) for dropdowns
+   */
+  static async getDataSourceOptions(
+    type: "collections" | "products"
+  ): Promise<Array<{ value: string; label: string }>> {
+    try {
+      const response = await fetch(`/editor/api/data-source-options`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          `Failed to fetch data source options: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error("Error fetching data source options:", error);
+      return [];
+    }
+  }
 }
 
 // Export API
