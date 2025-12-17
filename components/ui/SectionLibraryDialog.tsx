@@ -45,7 +45,7 @@ export const SectionLibraryDialog: React.FC<SectionLibraryDialogProps> = ({
       open={open}
       onClose={onClose}
       title="Add section"
-      size="lg"
+      size="xl"
       footer={
         <>
           <button
@@ -72,7 +72,7 @@ export const SectionLibraryDialog: React.FC<SectionLibraryDialogProps> = ({
       </p>
       <div className="flex gap-4">
         {/* Left: section list */}
-        <div className="w-1/3 space-y-1 max-h-80 overflow-y-auto">
+        <div className="w-1/3 space-y-1 h-[700px] overflow-y-auto">
           {options.map((option) => {
             const isSelected = option.value === selectedLibraryKey;
             return (

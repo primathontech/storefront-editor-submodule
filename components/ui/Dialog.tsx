@@ -8,7 +8,7 @@ interface DialogProps {
   title?: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
 export const Dialog: React.FC<DialogProps> = ({
@@ -22,7 +22,13 @@ export const Dialog: React.FC<DialogProps> = ({
   if (!open) return null;
 
   const maxWidthClass =
-    size === "sm" ? "max-w-sm" : size === "lg" ? "max-w-2xl" : "max-w-md";
+    size === "sm"
+      ? "max-w-sm"
+      : size === "lg"
+        ? "max-w-4xl"
+        : size === "xl"
+          ? "max-w-7xl"
+          : "max-w-md";
 
   const handleOverlayClick = (
     event: React.MouseEvent<HTMLDivElement, MouseEvent>

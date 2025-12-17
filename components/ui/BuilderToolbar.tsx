@@ -722,8 +722,8 @@ export default function BuilderToolbar({
                 />
               )}
 
-              {/*  <br />
-
+              <br />
+              {/* TODO: fix it after common data-layer addtion 
               {renderDataSourceEditor()}
 
               <br />  */}
