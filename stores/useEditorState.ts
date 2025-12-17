@@ -278,8 +278,8 @@ export const useEditorState = create<EditorState>()(
 
         const sectionId = `${id}-${uniqueId}`;
         const widgets = libraryWidgets.map((widget: any) => ({
-            ...widget,
-            id: `${widget.id}-${uniqueId}`,
+          ...widget,
+          id: `${widget.id}-${uniqueId}`,
         }));
 
         const extraDataSources: Record<string, any> = {};
