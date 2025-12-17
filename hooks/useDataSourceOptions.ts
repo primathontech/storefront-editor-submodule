@@ -4,10 +4,10 @@ import { SimpleSelectOption } from "../components/ui/SimpleSelect";
 import { api } from "../services/api";
 
 type DataSourceType =
-  | typeof DATA_SOURCE_TYPES.COLLECTION_BY_HANDLES
+  // | typeof DATA_SOURCE_TYPES.COLLECTION_BY_HANDLES
   | typeof DATA_SOURCE_TYPES.PRODUCT
-  | typeof DATA_SOURCE_TYPES.PRODUCTS_BY_HANDLES
-  | typeof DATA_SOURCE_TYPES.PRODUCT_RECOMMENDATIONS;
+  // | typeof DATA_SOURCE_TYPES.PRODUCTS_BY_HANDLES
+  // | typeof DATA_SOURCE_TYPES.PRODUCT_RECOMMENDATIONS;
 
 interface UseDataSourceOptionsResult {
   options: SimpleSelectOption[];
@@ -31,34 +31,34 @@ export function useDataSourceOptions(
       return;
     }
 
-    const fetchOptions = async () => {
-      setLoading(true);
-      setError(null);
+    // const fetchOptions = async () => {
+    //   setLoading(true);
+    //   setError(null);
 
-      try {
-        if (dataSourceType === DATA_SOURCE_TYPES.COLLECTION_BY_HANDLES) {
-          const data = await api.editor.getDataSourceOptions("collections");
-          setOptions(data);
-        } else if (
-          dataSourceType === DATA_SOURCE_TYPES.PRODUCT ||
-          dataSourceType === DATA_SOURCE_TYPES.PRODUCTS_BY_HANDLES ||
-          dataSourceType === DATA_SOURCE_TYPES.PRODUCT_RECOMMENDATIONS
-        ) {
-          const data = await api.editor.getDataSourceOptions("products");
-          setOptions(data);
-        } else {
-          setOptions([]);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error(String(err)));
-        setOptions([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+    //   try {
+    //     if (dataSourceType === DATA_SOURCE_TYPES.COLLECTION_BY_HANDLES) {
+    //       const data = await api.editor.getDataSourceOptions("collections");
+    //       setOptions(data);
+    //     } else if (
+    //       dataSourceType === DATA_SOURCE_TYPES.PRODUCT ||
+    //       dataSourceType === DATA_SOURCE_TYPES.PRODUCTS_BY_HANDLES ||
+    //       dataSourceType === DATA_SOURCE_TYPES.PRODUCT_RECOMMENDATIONS
+    //     ) {
+    //       const data = await api.editor.getDataSourceOptions("products");
+    //       setOptions(data);
+    //     } else {
+    //       setOptions([]);
+    //     }
+    //   } catch (err) {
+    //     setError(err instanceof Error ? err : new Error(String(err)));
+    //     setOptions([]);
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
 
-    fetchOptions();
+    // fetchOptions();
   }, [dataSourceType]);
 
-  return { options, loading, error };
+  return { options: [], loading, error };
 }
