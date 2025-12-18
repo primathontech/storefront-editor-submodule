@@ -59,6 +59,7 @@ const FourSidedSpacingInput = React.forwardRef<
               size="sm"
               value={value.top}
               onChange={(e) => handleChange("top", Number(e.target.value))}
+              onFocus={(e) => e.target.select()}
               disabled={disabled}
               className="text-center"
             />
@@ -72,6 +73,7 @@ const FourSidedSpacingInput = React.forwardRef<
               size="sm"
               value={value.right}
               onChange={(e) => handleChange("right", Number(e.target.value))}
+              onFocus={(e) => e.target.select()}
               disabled={disabled}
               className="text-center"
             />
@@ -85,6 +87,7 @@ const FourSidedSpacingInput = React.forwardRef<
               size="sm"
               value={value.bottom}
               onChange={(e) => handleChange("bottom", Number(e.target.value))}
+              onFocus={(e) => e.target.select()}
               disabled={disabled}
               className="text-center"
             />
@@ -96,6 +99,7 @@ const FourSidedSpacingInput = React.forwardRef<
               size="sm"
               value={value.left}
               onChange={(e) => handleChange("left", Number(e.target.value))}
+              onFocus={(e) => e.target.select()}
               disabled={disabled}
               className="text-center"
             />

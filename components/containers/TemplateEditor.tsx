@@ -23,15 +23,11 @@ import "@/core/widget-registry-setup";
 interface TemplateEditorProps {
   templateMeta: any;
   themeId?: string;
-  device?: "desktop" | "mobile" | "fullscreen";
-  mode?: "edit" | "preview";
 }
 
 const TemplateEditor: React.FC<TemplateEditorProps> = ({
   templateMeta,
   themeId,
-  device = "desktop",
-  mode = "edit",
 }) => {
   const {
     pageConfig,
@@ -50,6 +46,8 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     routeContext,
     setRouteContext,
     updateRouteHandle,
+    device,
+    mode,
   } = useEditorState();
 
   const [themeStyles, setThemeStyles] = useState<Record<string, any> | null>(
@@ -110,7 +108,6 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
         if (isCancelled) {
           return;
         }
-        setPageConfig(template);
 
         // Close settings overlay when template changes
         setSelectedSection(null);
@@ -127,6 +124,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
           return;
         }
         setPageData(realData);
+        setPageConfig(template);
 
         // 5. Process Styles
         const themeLoader = new FileSystemThemeLoader();
@@ -244,8 +242,13 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
   // ✅ Move all hooks before conditional returns to follow Rules of Hooks
   const widgetInjector = new WidgetInjector();
+
+  // Map device to breakpoint: desktop/fullscreen → desktop, tablet → tablet, mobile → mobile
+  const breakpoint: "mobile" | "tablet" | "desktop" =
+    device === "fullscreen" ? "desktop" : device;
+
   const layoutRenderer = new LayoutRenderer((section, children, styles) => (
-    <SectionWrapper section={section} styles={styles}>
+    <SectionWrapper section={section} styles={styles} breakpoint={breakpoint}>
       {children}
     </SectionWrapper>
   ));
@@ -291,7 +294,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     [setSelectedSection, setSelectedWidget, setShowSettingsDrawer]
   );
 
-  // ✅ Memoize layout rendering to trigger re-render on language change
+  // ✅ Memoize layout rendering to trigger re-render on language/device change
   const renderedLayout = useMemo(() => {
     if (!translatedPageConfig) {
       return null;
@@ -306,6 +309,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
       onSelectWidget,
     });
   }, [
+    breakpoint,
     translatedPageConfig,
     widgets,
     styles,

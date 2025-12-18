@@ -1,14 +1,11 @@
 import React from "react";
 import { useDualTranslationStore } from "../../stores/dualTranslationStore";
+import { useEditorState } from "../../stores/useEditorState";
 
 interface EditorHeader2Props {
   theme?: any;
   selectedTemplateId?: string | null;
   onTemplateChange?: (templateMeta: any) => void;
-  device?: "desktop" | "mobile" | "fullscreen";
-  setDevice?: (device: "desktop" | "mobile" | "fullscreen") => void;
-  mode?: "edit" | "preview";
-  setMode?: (mode: "edit" | "preview") => void;
   onSave?: () => void;
   isSaving?: boolean;
 }
@@ -23,10 +20,6 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
   theme,
   selectedTemplateId,
   onTemplateChange,
-  device = "desktop",
-  setDevice,
-  mode = "edit",
-  setMode,
   onSave,
   isSaving = false,
 }) => {
@@ -35,6 +28,7 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
     isSaving: isTranslationSaving,
     hasUnsavedChanges,
   } = useDualTranslationStore();
+  const { device, setDevice, mode, setMode } = useEditorState();
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedTemplateId = e.target.value;
@@ -82,7 +76,7 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
       ? "Make some changes before saving"
       : "Save changes";
 
-  const DEVICES = ["desktop", "mobile", "fullscreen"] as const;
+  const DEVICES = ["desktop", "tablet", "mobile", "fullscreen"] as const;
   const MODES = ["edit", "preview"] as const;
 
   return (
@@ -148,7 +142,7 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
                   ? "bg-blue-500 text-white"
                   : "bg-gray-200 text-gray-700"
               } cursor-pointer`}
-              onClick={() => setDevice?.(d)}
+              onClick={() => setDevice(d)}
               title={`Switch to ${d.charAt(0).toUpperCase() + d.slice(1)} view`}
             >
               {d.charAt(0).toUpperCase() + d.slice(1)}
@@ -164,7 +158,7 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
                   ? "bg-green-600 text-white"
                   : "bg-gray-200 text-gray-700"
               } cursor-pointer`}
-              onClick={() => setMode?.(m)}
+              onClick={() => setMode(m)}
               title={`Switch to ${m.charAt(0).toUpperCase() + m.slice(1)} mode`}
             >
               {m.charAt(0).toUpperCase() + m.slice(1)}
