@@ -58,7 +58,13 @@ const FourSidedSpacingInput = React.forwardRef<
               type="number"
               size="sm"
               value={value.top}
-              onChange={(e) => handleChange("top", Number(e.target.value))}
+              onChange={(e) => {
+                const val = e.target.value.replace(/^0+/, "") || "0";
+                if (e.target.value !== val) {
+                  e.target.value = val;
+                }
+                handleChange("top", Number(val));
+              }}
               onFocus={(e) => e.target.select()}
               disabled={disabled}
               className="text-center"
@@ -72,7 +78,13 @@ const FourSidedSpacingInput = React.forwardRef<
               type="number"
               size="sm"
               value={value.right}
-              onChange={(e) => handleChange("right", Number(e.target.value))}
+              onChange={(e) => {
+                const val = e.target.value.replace(/^0+/, "") || "0";
+                if (e.target.value !== val) {
+                  e.target.value = val;
+                }
+                handleChange("right", Number(val));
+              }}
               onFocus={(e) => e.target.select()}
               disabled={disabled}
               className="text-center"
@@ -86,7 +98,13 @@ const FourSidedSpacingInput = React.forwardRef<
               type="number"
               size="sm"
               value={value.bottom}
-              onChange={(e) => handleChange("bottom", Number(e.target.value))}
+              onChange={(e) => {
+                const val = e.target.value.replace(/^0+/, "") || "0";
+                if (e.target.value !== val) {
+                  e.target.value = val;
+                }
+                handleChange("bottom", Number(val));
+              }}
               onFocus={(e) => e.target.select()}
               disabled={disabled}
               className="text-center"
@@ -98,7 +116,13 @@ const FourSidedSpacingInput = React.forwardRef<
               type="number"
               size="sm"
               value={value.left}
-              onChange={(e) => handleChange("left", Number(e.target.value))}
+              onChange={(e) => {
+                const val = e.target.value.replace(/^0+/, "") || "0";
+                if (e.target.value !== val) {
+                  e.target.value = val;
+                }
+                handleChange("left", Number(val));
+              }}
               onFocus={(e) => e.target.select()}
               disabled={disabled}
               className="text-center"
