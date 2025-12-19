@@ -70,9 +70,9 @@ export const SectionLibraryDialog: React.FC<SectionLibraryDialogProps> = ({
         Pick a section on the left to see its preview. Click Done to add it to
         the page.
       </p>
-      <div className="flex gap-4">
+      <div className="flex gap-4 min-h-0">
         {/* Left: section list */}
-        <div className="w-1/3 space-y-1 h-[700px] overflow-y-auto">
+        <div className="w-1/3 space-y-1 max-h-[60vh] overflow-y-auto pr-2">
           {options.map((option) => {
             const isSelected = option.value === selectedLibraryKey;
             return (

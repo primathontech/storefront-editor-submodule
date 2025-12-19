@@ -7,6 +7,7 @@ import { availableSectionsRegistry } from "@/registries/available-sections-regis
 import { useDualTranslationStore } from "./dualTranslationStore";
 import { processSectionWidgets } from "../utils/section-translation-utils";
 import { translationUtils } from "./dualTranslationStore";
+import { DEFAULT_BREAKPOINTS } from "@/lib/page-builder/models/responsive-types";
 
 // Widget to Data Source mapping
 const WIDGET_DATA_SOURCE_MAP: Record<string, string> = {
@@ -58,7 +59,7 @@ export interface EditorState {
   expandedSections: Set<string>;
   showSettingsDrawer: boolean;
   mode: "edit" | "preview";
-  device: "desktop" | "mobile" | "fullscreen";
+  device: "desktop" | "mobile" | "tablet" | "fullscreen";
 
   // Actions
   setPageConfig: (config: any) => void;
@@ -79,7 +80,7 @@ export interface EditorState {
   toggleSectionExpansion: (sectionId: string) => void;
   setShowSettingsDrawer: (show: boolean) => void;
   setMode: (mode: "edit" | "preview") => void;
-  setDevice: (device: "desktop" | "mobile" | "fullscreen") => void;
+  setDevice: (device: "desktop" | "mobile" | "tablet" | "fullscreen") => void;
 
   // Section Actions
   addSection: (
@@ -735,10 +736,23 @@ export const useEditorState = create<EditorState>()(
 );
 
 // Centralized responsive frame styles used by the editor preview iframe
+// Frame widths align with DEFAULT_BREAKPOINTS from responsive-types.ts
 export const RESPONSIVE_FRAME_STYLE = {
   mobile: {
+    // Mobile: max 767px, using common mobile width (375px = iPhone standard)
     width: 375,
     height: 667,
+    transition: "width 0.2s, height 0.2s",
+    boxShadow: "0 0 24px rgba(0,0,0,0.2)",
+    borderRadius: 12,
+    background: "white",
+    border: "none",
+    display: "block",
+  },
+  tablet: {
+    // Tablet: 768-1023px, using tablet min width (768px)
+    width: DEFAULT_BREAKPOINTS.tablet.min,
+    height: 1024,
     transition: "width 0.2s, height 0.2s",
     boxShadow: "0 0 24px rgba(0,0,0,0.2)",
     borderRadius: 12,
@@ -749,6 +763,7 @@ export const RESPONSIVE_FRAME_STYLE = {
   desktop: {
     width: "100%",
     height: "100%",
+    transition: "width 0.2s, height 0.2s",
     background: "white",
     border: "none",
     display: "block",

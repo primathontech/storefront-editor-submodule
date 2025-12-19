@@ -39,10 +39,6 @@ export default function UnifiedEditorPage() {
   }>({ isValid: null });
   const [theme, setTheme] = useState<any>(null);
   const [templateMeta, setTemplateMeta] = useState<any>(null);
-  const [device, setDevice] = useState<"desktop" | "mobile" | "fullscreen">(
-    "desktop"
-  );
-  const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -180,22 +176,13 @@ export default function UnifiedEditorPage() {
         theme={theme}
         selectedTemplateId={templateMeta?.id || null}
         onTemplateChange={(templateMeta) => setTemplateMeta(templateMeta)}
-        device={device}
-        setDevice={setDevice}
-        mode={mode}
-        setMode={setMode}
         onSave={handleSave}
         isSaving={isSaving}
       />
 
       {templateMeta ? (
         templateMeta.isDynamic ? (
-          <TemplateEditor
-            templateMeta={templateMeta}
-            themeId={themeId}
-            device={device}
-            mode={mode}
-          />
+          <TemplateEditor templateMeta={templateMeta} themeId={themeId} />
         ) : (
           <TranslationEditor templateMeta={templateMeta} themeId={themeId} />
         )
