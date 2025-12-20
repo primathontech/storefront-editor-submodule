@@ -37,6 +37,7 @@ import { TranslationService } from "@/lib/i18n/translation-service";
 import { DATA_SOURCE_TYPES } from "@/lib/page-builder/models/page-config-types";
 import { SectionLibraryDialog } from "./SectionLibraryDialog";
 import { useDataSourceOptions } from "../../hooks/useDataSourceOptions";
+import { availableSectionsRegistry } from "@/registries/available-sections-registry";
 
 interface BuilderToolbarProps {
   pageConfig: any;
@@ -141,6 +142,21 @@ export default function BuilderToolbar({
   const handleAddSectionFromLibrary = (libraryKey: string) => {
     addSectionFromLibrary(libraryKey, insertAfterIndex);
     handleCloseAddSectionModal();
+  };
+
+  // Check if a section exists in the available sections library
+  const isSectionInLibrary = (sectionId: string): boolean => {
+    const entries = availableSectionsRegistry.availableSections || {};
+    // Check if section id exactly matches a library section id (template sections like "header-section")
+    // OR if section id starts with a library section id + dash (library-added sections like "header-section-abc123")
+    return Object.values(entries).some((section: any) => {
+      const libraryId = section.id;
+      // Exact match (template sections)
+      if (sectionId === libraryId) return true;
+      // Starts with library id + dash (library-added sections with nanoid)
+      if (sectionId.startsWith(libraryId + "-")) return true;
+      return false;
+    });
   };
 
   const handleSectionSettingChange = (key: string, value: any) => {
@@ -554,28 +570,46 @@ export default function BuilderToolbar({
                               >
                                 {/* Section Header */}
                                 {/* Remove Section Button */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    removeSection(section.id);
-                                  }}
-                                  className="ml-auto block text-red-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-100"
-                                  title="Remove section"
-                                >
-                                  <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M6 18L18 6M6 6l12 12"
-                                    />
-                                  </svg>
-                                </button>
+                                {(() => {
+                                  const isInLibrary = isSectionInLibrary(
+                                    section.id
+                                  );
+                                  return (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (isInLibrary) {
+                                          removeSection(section.id);
+                                        }
+                                      }}
+                                      disabled={!isInLibrary}
+                                      className={`ml-auto block p-1 rounded transition-colors ${
+                                        isInLibrary
+                                          ? "text-red-400 hover:text-red-600 hover:bg-red-100 cursor-pointer"
+                                          : "text-gray-300 cursor-not-allowed opacity-50"
+                                      }`}
+                                      title={
+                                        isInLibrary
+                                          ? "Remove section"
+                                          : "This section is not removable"
+                                      }
+                                    >
+                                      <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M6 18L18 6M6 6l12 12"
+                                        />
+                                      </svg>
+                                    </button>
+                                  );
+                                })()}
                                 {/* </SidebarMenuButton> */}
 
                                 {/* Widgets List */}
