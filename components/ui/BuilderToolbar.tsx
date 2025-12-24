@@ -31,7 +31,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useEditorState } from "../../stores/useEditorState";
-import { sectionRegistry } from "@/cms/schemas/section-registry";
+import { sectionRegistry } from "../../schemas/section-registry";
 import { widgetRegistry } from "@/cms/schemas/widget-registry";
 import { TranslationService } from "@/lib/i18n/translation-service";
 import { DATA_SOURCE_TYPES } from "@/lib/page-builder/models/page-config-types";

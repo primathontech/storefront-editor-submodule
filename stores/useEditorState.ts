@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { nanoid } from "nanoid";
-import { sectionRegistry } from "@/cms/schemas/section-registry";
+import { sectionRegistry } from "../schemas/section-registry";
 import { widgetRegistry } from "@/cms/schemas/widget-registry";
 import { availableSectionsRegistry } from "@/registries/available-sections-registry";
 import { useDualTranslationStore } from "./dualTranslationStore";
