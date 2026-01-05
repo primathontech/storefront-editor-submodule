@@ -1,13 +1,7 @@
 import { useState, useEffect } from "react";
-import { DATA_SOURCE_TYPES } from "@/lib/page-builder/models/page-config-types";
 import { SimpleSelectOption } from "../components/ui/SimpleSelect";
 import { api } from "../services/api";
-
-type DataSourceType =
-  // | typeof DATA_SOURCE_TYPES.COLLECTION_BY_HANDLES
-  typeof DATA_SOURCE_TYPES.PRODUCT;
-// | typeof DATA_SOURCE_TYPES.PRODUCTS_BY_HANDLES
-// | typeof DATA_SOURCE_TYPES.PRODUCT_RECOMMENDATIONS;
+import { DataSourceOptionSource } from "../config/data-source-editor";
 
 interface UseDataSourceOptionsResult {
   options: SimpleSelectOption[];
@@ -16,49 +10,39 @@ interface UseDataSourceOptionsResult {
 }
 
 /**
- * Hook to fetch collections or products for data source dropdowns
+ * Hook to fetch options for data source dropdowns
+ * @param optionSource - "collections" or "products" (from registry config)
  */
 export function useDataSourceOptions(
-  dataSourceType: DataSourceType | null
+  optionSource: DataSourceOptionSource | null
 ): UseDataSourceOptionsResult {
   const [options, setOptions] = useState<SimpleSelectOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!dataSourceType) {
+    if (!optionSource) {
       setOptions([]);
       return;
     }
 
-    // const fetchOptions = async () => {
-    //   setLoading(true);
-    //   setError(null);
+    const fetchOptions = async () => {
+      setLoading(true);
+      setError(null);
 
-    //   try {
-    //     if (dataSourceType === DATA_SOURCE_TYPES.COLLECTION_BY_HANDLES) {
-    //       const data = await api.editor.getDataSourceOptions("collections");
-    //       setOptions(data);
-    //     } else if (
-    //       dataSourceType === DATA_SOURCE_TYPES.PRODUCT ||
-    //       dataSourceType === DATA_SOURCE_TYPES.PRODUCTS_BY_HANDLES ||
-    //       dataSourceType === DATA_SOURCE_TYPES.PRODUCT_RECOMMENDATIONS
-    //     ) {
-    //       const data = await api.editor.getDataSourceOptions("products");
-    //       setOptions(data);
-    //     } else {
-    //       setOptions([]);
-    //     }
-    //   } catch (err) {
-    //     setError(err instanceof Error ? err : new Error(String(err)));
-    //     setOptions([]);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
+      try {
+        const data = await api.editor.getDataSourceOptions(optionSource);
+        setOptions(data);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setOptions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // fetchOptions();
-  }, [dataSourceType]);
+    fetchOptions();
+  }, [optionSource]);
 
-  return { options: [], loading, error };
+  return { options, loading, error };
 }
