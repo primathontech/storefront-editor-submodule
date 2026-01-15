@@ -77,6 +77,7 @@ export default function BuilderToolbar({
     setExpandedSections,
     updateDataSource,
     pendingPageConfig,
+    htmlValidationErrors,
   } = useEditorState();
 
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
@@ -398,40 +399,65 @@ export default function BuilderToolbar({
                                   const isInLibrary = isSectionInLibrary(
                                     section.id
                                   );
+                                  const sectionErrors =
+                                    htmlValidationErrors[section.id] || [];
+                                  const hasErrors = sectionErrors.length > 0;
                                   return (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (isInLibrary) {
-                                          removeSection(section.id);
+                                    <div className="flex items-center">
+                                      {hasErrors && (
+                                        <div
+                                          className="mr-auto p-1 text-red-500"
+                                          title={`${sectionErrors.length} HTML validation error${sectionErrors.length !== 1 ? "s" : ""}`}
+                                        >
+                                          <svg
+                                            className="w-4 h-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth={2}
+                                              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                            />
+                                          </svg>
+                                        </div>
+                                      )}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (isInLibrary) {
+                                            removeSection(section.id);
+                                          }
+                                        }}
+                                        disabled={!isInLibrary}
+                                        className={`ml-auto block p-1 rounded transition-colors ${
+                                          isInLibrary
+                                            ? "text-red-400 hover:text-red-600 hover:bg-red-100 cursor-pointer"
+                                            : "text-gray-300 cursor-not-allowed opacity-50"
+                                        }`}
+                                        title={
+                                          isInLibrary
+                                            ? "Remove section"
+                                            : "This section is not removable"
                                         }
-                                      }}
-                                      disabled={!isInLibrary}
-                                      className={`ml-auto block p-1 rounded transition-colors ${
-                                        isInLibrary
-                                          ? "text-red-400 hover:text-red-600 hover:bg-red-100 cursor-pointer"
-                                          : "text-gray-300 cursor-not-allowed opacity-50"
-                                      }`}
-                                      title={
-                                        isInLibrary
-                                          ? "Remove section"
-                                          : "This section is not removable"
-                                      }
-                                    >
-                                      <svg
-                                        className="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
                                       >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M6 18L18 6M6 6l12 12"
-                                        />
-                                      </svg>
-                                    </button>
+                                        <svg
+                                          className="w-4 h-4"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M6 18L18 6M6 6l12 12"
+                                          />
+                                        </svg>
+                                      </button>
+                                    </div>
                                   );
                                 })()}
                                 {/* </SidebarMenuButton> */}
@@ -572,6 +598,7 @@ export default function BuilderToolbar({
                   values={selectedSection.settings}
                   onUpdate={handleSectionSettingChange}
                   translationService={translationService}
+                  sectionId={selectedSectionId || undefined}
                 />
               )}
 
@@ -604,6 +631,7 @@ export default function BuilderToolbar({
                   values={selectedWidget.settings}
                   onUpdate={handleWidgetSettingChange}
                   translationService={translationService}
+                  sectionId={selectedSectionId || undefined}
                 />
               )}
 

@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { useDualTranslationStore } from "../../stores/dualTranslationStore";
 import { useEditorState } from "../../stores/useEditorState";
+import { useToast } from "@/ui/context/toast/ToastContext";
 
 interface EditorHeader2Props {
   theme?: any;
@@ -28,7 +29,11 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
     isSaving: isTranslationSaving,
     hasUnsavedChanges,
   } = useDualTranslationStore();
-  const { device, setDevice, mode, setMode } = useEditorState();
+  const { device, setDevice, mode, setMode, validateAllHtml } =
+    useEditorState();
+
+  const [isValidating, setIsValidating] = useState(false);
+  const { addToast } = useToast();
 
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedTemplateId = e.target.value;
@@ -52,14 +57,51 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
     .find((template: any) => template.id === selectedTemplateId);
 
   const handleSave = async () => {
-    if (selectedTemplate?.isDynamic) {
-      // Handle template save
-      onSave?.();
-      // For dynamic templates, save to template-specific file
-      await saveTranslations(theme?.id, selectedTemplateId!);
-    } else {
-      // Handle translation save
-      await saveTranslations(theme?.id, selectedTemplateId!);
+    // Validate all HTML before saving
+    setIsValidating(true);
+    try {
+      await validateAllHtml();
+
+      // Check errors after validation (get fresh state)
+      const state = useEditorState.getState();
+      const errorsBySection = state.htmlValidationErrors;
+      const sectionsWithErrors = Object.entries(errorsBySection).filter(
+        ([_, errors]) => errors.length > 0
+      );
+
+      if (sectionsWithErrors.length > 0) {
+        const totalErrors = sectionsWithErrors.reduce(
+          (sum, [_, errors]) => sum + errors.length,
+          0
+        );
+        addToast({
+          type: "error",
+          title: "HTML Validation Failed",
+          message: `Found ${totalErrors} error${totalErrors !== 1 ? "s" : ""} in ${sectionsWithErrors.length} section${sectionsWithErrors.length !== 1 ? "s" : ""}. Please fix errors before saving.`,
+          duration: 5000,
+        });
+        return; // Don't save if errors exist
+      }
+
+      if (selectedTemplate?.isDynamic) {
+        // Handle template save
+        onSave?.();
+        // For dynamic templates, save to template-specific file
+        await saveTranslations(theme?.id, selectedTemplateId!);
+      } else {
+        // Handle translation save
+        await saveTranslations(theme?.id, selectedTemplateId!);
+      }
+    } catch (error) {
+      console.error("Validation error:", error);
+      addToast({
+        type: "error",
+        title: "Validation Error",
+        message: "An error occurred during validation. Please try again.",
+        duration: 5000,
+      });
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -68,6 +110,7 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
     !editorChangesEnabled ||
     isSaving ||
     isTranslationSaving ||
+    isValidating ||
     (selectedTemplate?.isDynamic ? false : !hasUnsavedChanges);
 
   const saveButtonTitle = !editorChangesEnabled
@@ -130,7 +173,11 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
           }`}
           title={saveButtonTitle}
         >
-          {isSaving || isTranslationSaving ? "Saving..." : "Save"}
+          {isValidating
+            ? "Validating..."
+            : isSaving || isTranslationSaving
+              ? "Saving..."
+              : "Save"}
         </button>
 
         <div className="flex gap-1">

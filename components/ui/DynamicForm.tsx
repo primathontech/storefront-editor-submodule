@@ -9,6 +9,7 @@ import { SimpleSelect } from "./SimpleSelect";
 import { ImageInput } from "./ImageInput";
 import { FAQInput } from "./FAQInput";
 import { RichTextInput } from "./RichTextInput";
+import { HtmlInput } from "./HtmlInput";
 import { ObjectArrayInput } from "./ObjectArrayInput";
 import { ArrayInput } from "./ArrayInput";
 import type { BaseComponentProps } from "../types";
@@ -30,7 +31,8 @@ export interface FormFieldSchema {
     | "faq"
     | "richtext"
     | "objectArray"
-    | "array";
+    | "array"
+    | "html";
   label?: string;
   options?: { value: string; label: string }[];
   min?: number;
@@ -87,6 +89,11 @@ export interface DynamicFormProps extends BaseComponentProps {
    * Translation service for handling translation keys
    */
   translationService?: TranslationService | null;
+
+  /**
+   * Section ID for HTML validation error tracking
+   */
+  sectionId?: string;
 }
 
 // Translation utilities hook
@@ -124,6 +131,7 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
       variant = "primary",
       style,
       translationService,
+      sectionId,
       ...props
     },
     ref
@@ -325,6 +333,24 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
               onChange={handleRichTextChange}
               disabled={fieldDisabled}
               placeholder={fieldSchema.placeholder}
+            />
+          );
+
+        case "html":
+          const htmlDisplay = translateValue(value) || "";
+          const handleHtmlChange = (newValue: string) => {
+            const finalValue = handleTranslationChange(value, newValue);
+            onUpdate(key, finalValue);
+          };
+
+          return (
+            <HtmlInput
+              label={fieldLabel}
+              value={htmlDisplay}
+              onChange={handleHtmlChange}
+              disabled={fieldDisabled}
+              placeholder={fieldSchema.placeholder}
+              sectionId={sectionId}
             />
           );
 
