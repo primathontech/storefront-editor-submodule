@@ -35,7 +35,7 @@ import { sectionRegistry } from "@/app/editor/schemas/section-registry";
 import { widgetRegistry } from "@/cms/schemas/widget-registry";
 import { TranslationService } from "@/lib/i18n/translation-service";
 import { SectionLibraryDialog } from "./SectionLibraryDialog";
-import { DataSourceEditor } from "./DataSourceEditor";
+// import { DataSourceEditor } from "./DataSourceEditor";
 import { availableSectionsRegistry } from "@/registries/available-sections-registry";
 
 interface BuilderToolbarProps {
@@ -604,7 +604,7 @@ export default function BuilderToolbar({
 
               <br />
 
-              {selectedWidget &&
+              {/* {selectedWidget &&
                 selectedDataSource &&
                 selectedWidget.dataSourceKey && (
                   <DataSourceEditor
@@ -620,7 +620,7 @@ export default function BuilderToolbar({
                   />
                 )}
 
-              <br />
+              <br /> */}
 
               {/* Widget Settings */}
               {selectedWidget && selectedWidgetSchema && (
