@@ -163,5 +163,3 @@ Output: Give me the code block ready for immediate copy-pasting into a custom co
     return cleanHtml;
   }
 }
-
-
