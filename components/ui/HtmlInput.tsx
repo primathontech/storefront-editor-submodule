@@ -4,6 +4,7 @@ import React, { useCallback, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useSidebarWidth } from "../../context/SidebarWidthContext";
 import { useEditorState } from "../../stores/useEditorState";
+import { AIAPI } from "../../services/ai";
 
 // Lazy load the entire editor component with all heavy dependencies in one chunk
 const HtmlEditorWithValidation = dynamic(
@@ -48,6 +49,9 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
   sectionId,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [aiMessage, setAiMessage] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiImageFile, setAiImageFile] = useState<File | null>(null);
   const { setWidth } = useSidebarWidth();
   const { htmlValidationErrors } = useEditorState();
 
@@ -85,6 +89,28 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
     },
     [placeholder]
   );
+
+  const handleAiGenerate = useCallback(async () => {
+    if (!aiMessage.trim() || isGenerating || disabled) return;
+
+    setIsGenerating(true);
+    try {
+      const cleanHtml = await AIAPI.generateCustomHtmlSnippet({
+        userMessage: aiMessage,
+        currentHtml: value,
+        imageFile: aiImageFile,
+      });
+
+      if (cleanHtml) {
+        onChange(cleanHtml);
+        setAiMessage("");
+      }
+    } catch (error) {
+      console.error("AI generation error:", error);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [aiMessage, isGenerating, disabled, onChange, value, aiImageFile]);
 
   return (
     <div style={{ marginBottom: "1rem" }}>
@@ -187,6 +213,125 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
               </ul>
             </div>
           )}
+          <div
+            style={{
+              padding: "12px",
+              borderTop: "1px solid #e5e7eb",
+              backgroundColor: "#f9fafb",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "12px",
+                fontWeight: 500,
+                marginBottom: "8px",
+                color: "#374151",
+              }}
+            >
+              AI Assistant
+            </div>
+            <div
+              style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}
+            >
+              <textarea
+                value={aiMessage}
+                onChange={(e) => setAiMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    handleAiGenerate();
+                  }
+                }}
+                placeholder="Describe the HTML/CSS/JS you want to generate..."
+                disabled={isGenerating || disabled}
+                style={{
+                  flex: 1,
+                  padding: "8px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "4px",
+                  fontSize: "12px",
+                  minHeight: "60px",
+                  resize: "vertical",
+                  fontFamily: "inherit",
+                }}
+              />
+              <button
+                type="button"
+                onClick={handleAiGenerate}
+                disabled={!aiMessage.trim() || isGenerating || disabled}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor:
+                    !aiMessage.trim() || isGenerating || disabled
+                      ? "#9ca3af"
+                      : "#3b82f6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor:
+                    !aiMessage.trim() || isGenerating || disabled
+                      ? "not-allowed"
+                      : "pointer",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {isGenerating ? "Generating..." : "Generate"}
+              </button>
+            </div>
+            <div
+              style={{
+                marginTop: "8px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                fontSize: "11px",
+                color: "#4b5563",
+              }}
+            >
+              <label
+                style={{
+                  cursor: isGenerating || disabled ? "not-allowed" : "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                Attach image
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  disabled={isGenerating || disabled}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) {
+                      setAiImageFile(null);
+                      return;
+                    }
+                    if (!file.type.startsWith("image/")) {
+                      console.error("Selected file is not an image");
+                      setAiImageFile(null);
+                      return;
+                    }
+                    setAiImageFile(file);
+                  }}
+                />
+              </label>
+              {aiImageFile && (
+                <span
+                  style={{
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                    maxWidth: "200px",
+                  }}
+                  title={aiImageFile.name}
+                >
+                  {aiImageFile.name}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
