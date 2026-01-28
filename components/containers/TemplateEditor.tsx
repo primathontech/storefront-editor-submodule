@@ -15,8 +15,8 @@ import {
   RESPONSIVE_FRAME_STYLE,
 } from "../../stores/useEditorState";
 import BuilderToolbar from "../ui/BuilderToolbar";
+import { SettingsSidebar } from "../ui/SettingsSidebar";
 import { useDualTranslationStore } from "../../stores/dualTranslationStore";
-import { useSidebarWidth } from "../../context/SidebarWidthContext";
 
 // Import widget registry setup to ensure widgets are registered
 import "@/core/widget-registry-setup";
@@ -49,6 +49,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     updateRouteHandle,
     device,
     mode,
+    showSettingsDrawer,
   } = useEditorState();
 
   const [themeStyles, setThemeStyles] = useState<Record<string, any> | null>(
@@ -57,7 +58,6 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
   const [isLoadingData, setIsLoadingData] = useState(false);
   const { translations, language, setLanguage, getTranslations } =
     useDualTranslationStore();
-  const { width: sidebarWidth } = useSidebarWidth();
 
   // Create translation service reactively based on current state
   const translationService = useMemo(() => {
@@ -341,20 +341,12 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
   return (
     <div className="flex flex-1 min-h-0">
       {device !== "fullscreen" && (
-        <div
-          className="bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0"
-          style={{
-            width: `${sidebarWidth}px`,
-            transition: "width 0.2s ease-in-out",
-          }}
-        >
+        <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0">
           <BuilderToolbar
             templateName={templateMeta?.name}
             pageConfig={pageConfig}
-            translationService={translationService}
             currentLocale={language}
             supportedLanguages={templateMeta?.supportedLanguages || ["en"]}
-            routeContext={routeContext}
             onRouteHandleChange={updateRouteHandle}
             onLocaleChange={async (newLocale) => {
               setLanguage(newLocale);
@@ -417,6 +409,10 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
           </div>
         </Frame>
       </div>
+      {/* Right Settings Sidebar */}
+      {showSettingsDrawer && (
+        <SettingsSidebar translationService={translationService} />
+      )}
     </div>
   );
 };

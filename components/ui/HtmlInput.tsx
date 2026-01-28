@@ -2,7 +2,7 @@
 
 import React, { useCallback, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { useSidebarWidth } from "../../context/SidebarWidthContext";
+import { useRightSidebarWidth } from "../../context/RightSidebarWidthContext";
 import { useEditorState } from "../../stores/useEditorState";
 import { AIAPI } from "../../services/ai";
 
@@ -52,7 +52,7 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
   const [aiMessage, setAiMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiImageFile, setAiImageFile] = useState<File | null>(null);
-  const { setWidth } = useSidebarWidth();
+  const { setWidth } = useRightSidebarWidth();
   const { htmlValidationErrors } = useEditorState();
 
   // Get errors for this section from store (single source of truth)
@@ -62,14 +62,14 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
 
   useEffect(() => {
     if (isExpanded) {
-      setWidth(600); // Expand sidebar to 600px
+      setWidth(600); // Expand right sidebar to 600px
     } else {
-      setWidth(320); // Reset to default 320px
+      setWidth(400); // Reset to default 400px
     }
 
     // Cleanup: reset width when component unmounts
     return () => {
-      setWidth(320);
+      setWidth(400);
     };
   }, [isExpanded, setWidth]);
 

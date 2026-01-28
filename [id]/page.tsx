@@ -7,7 +7,7 @@ import { api } from "../services/api";
 import { useEditorState } from "../stores/useEditorState";
 import { EditorHeaderShimmer } from "../components/ui/EditorHeaderShimmer";
 import { EditorContentShimmer } from "../components/ui/EditorContentShimmer";
-import { SidebarWidthProvider } from "../context/SidebarWidthContext";
+import { RightSidebarWidthProvider } from "../context/RightSidebarWidthContext";
 
 const EditorHeader2 = dynamic(() => import("../components/ui/EditorHeader2"), {
   ssr: false,
@@ -182,13 +182,13 @@ export default function UnifiedEditorPage() {
       />
 
       {templateMeta ? (
-        <SidebarWidthProvider>
+        <RightSidebarWidthProvider>
           {templateMeta.isDynamic ? (
             <TemplateEditor templateMeta={templateMeta} themeId={themeId} />
           ) : (
             <TranslationEditor templateMeta={templateMeta} themeId={themeId} />
           )}
-        </SidebarWidthProvider>
+        </RightSidebarWidthProvider>
       ) : (
         <div className="flex-1 flex items-center justify-center bg-gray-50">
           <div className="text-center">
