@@ -33,3 +33,4 @@ export function readFileAsBase64(
     reader.readAsDataURL(file);
   });
 }
+

@@ -1,5 +1,5 @@
 import { ChatMessage, ChatRole } from "../../models/chat-types";
-import { readFileAsBase64 } from "../ai-utils";
+import { readFileAsBase64 } from "../../utils/ai-utils";
 import { HTML_AI_MODEL, HTML_SYSTEM_PROMPT } from "../html-ai-prompt";
 
 /**
