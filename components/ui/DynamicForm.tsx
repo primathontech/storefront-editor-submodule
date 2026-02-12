@@ -140,6 +140,11 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
       translationService || null
     );
 
+    const hasHtmlField = React.useMemo(
+      () => Object.values(schema).some((field) => field.type === "html"),
+      [schema]
+    );
+
     const renderField = (key: string, fieldSchema: FormFieldSchema) => {
       const value = values[key];
       const fieldError = errors[key] || fieldSchema.error;
@@ -345,7 +350,6 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
 
           return (
             <HtmlInput
-              label={fieldLabel}
               value={htmlDisplay}
               onChange={handleHtmlChange}
               disabled={fieldDisabled}
@@ -481,7 +485,11 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
 
     return (
       <div
-        className={cn("space-y-3", className)}
+        className={cn(
+          "space-y-3",
+          hasHtmlField && "flex flex-col flex-1 min-h-0",
+          className
+        )}
         ref={ref}
         style={style}
         {...props}

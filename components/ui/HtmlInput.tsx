@@ -1,11 +1,16 @@
 "use client";
 
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useRightSidebarWidth } from "../../context/RightSidebarWidthContext";
 import { useEditorState } from "../../stores/useEditorState";
 import { htmlChatService } from "../../services/chat/chat-service";
 import { ChatMessage, ChatRole, Conversation } from "../../models/chat-types";
+import { EditorAPI } from "../../services/api";
+import styles from "./HtmlInput.module.css";
+import { ImageUploadIcon } from "./GenerateDialog";
+import { useImageAttachment } from "./useImageAttachment";
+import { SparkleIcon } from "./SectionLibraryDialog";
 
 // Lazy load the entire editor component with all heavy dependencies in one chunk
 const HtmlEditorWithValidation = dynamic(
@@ -16,18 +21,7 @@ const HtmlEditorWithValidation = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div
-        style={{
-          padding: "20px",
-          textAlign: "center",
-          height: "500px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        Loading editor...
-      </div>
+      <div className={styles["loading-editor"]}>Loading editor...</div>
     ),
   }
 );
@@ -35,7 +29,6 @@ const HtmlEditorWithValidation = dynamic(
 export interface HtmlInputProps {
   value: string;
   onChange: (value: string) => void;
-  label?: string;
   disabled?: boolean;
   placeholder?: string;
   sectionId?: string;
@@ -44,16 +37,28 @@ export interface HtmlInputProps {
 export const HtmlInput: React.FC<HtmlInputProps> = ({
   value,
   onChange,
-  label,
   disabled = false,
-  placeholder = "Enter HTML code...",
+  placeholder = "Ask to AI...",
   sectionId,
 }) => {
   const [isCodeView, setIsCodeView] = useState(false);
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [chatInput, setChatInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [chatImageFile, setChatImageFile] = useState<File | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const {
+    file: chatImageFile,
+    previewUrl: chatImagePreviewUrl,
+    fileInputRef,
+    openFilePicker,
+    handleFileChange,
+    clearImage: clearChatImage,
+    setFile: setChatImageFile,
+  } = useImageAttachment();
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const processedPendingPromptRef = useRef<string | null>(null);
   const { setWidth } = useRightSidebarWidth();
   const { htmlValidationErrors } = useEditorState();
 
@@ -62,328 +67,420 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
     ? htmlValidationErrors[sectionId] || []
     : [];
 
-  // When this input is mounted, widen the right sidebar slightly for better UX.
+  // Adjust sidebar width based on view mode: wider for code view, narrower for chat view
   useEffect(() => {
-    setWidth(600);
-    return () => {
-      setWidth(400);
-    };
-  }, [setWidth]);
+    setWidth(isCodeView ? 600 : 400);
+  }, [isCodeView, setWidth]);
 
-  // Load existing conversation for this section (if any)
+  // Core send message function that accepts prompt text (and optional image override)
+  const handleSendMessageWithPrompt = useCallback(
+    async (promptText: string, imageOverride?: File | null) => {
+      if (!sectionId || !promptText.trim() || isSending || disabled) return;
+
+      const conversationId = `custom-html:${sectionId}`;
+      const trimmedPrompt = promptText.trim();
+      const imageFileToSend = imageOverride ?? chatImageFile;
+
+      // Create optimistic messages
+      const userMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: ChatRole.USER,
+        content: trimmedPrompt,
+        timestamp: new Date().toISOString(),
+        hasImage: imageFileToSend ? true : undefined,
+      };
+
+      const loadingMessageId = crypto.randomUUID();
+      const loadingMessage: ChatMessage = {
+        id: loadingMessageId,
+        role: ChatRole.ASSISTANT,
+        content: "", // Empty content triggers shimmer
+        timestamp: new Date().toISOString(),
+      };
+
+      // Optimistic update using functional state update to avoid stale closure
+      setConversation((prev) => {
+        const currentMessages = prev?.messages || [];
+        return {
+          conversationId,
+          messages: [...currentMessages, userMessage, loadingMessage],
+        };
+      });
+
+      setChatInput("");
+      clearChatImage();
+      setIsSending(true);
+
+      try {
+        const { conversation: updatedConversation, html } =
+          await htmlChatService.sendMessage({
+            conversationId,
+            userInput: trimmedPrompt,
+            currentHtml: value,
+            imageFile: imageFileToSend,
+          });
+
+        // Service returns the complete conversation with user + assistant messages
+        // Simply replace our optimistic state with the service's authoritative state
+        setConversation(updatedConversation);
+
+        if (html) {
+          onChange(html);
+        }
+      } catch (error) {
+        console.error("AI chat error:", error);
+        // On error, remove only the loading message, keep user message
+        setConversation((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            messages: prev.messages.filter(
+              (msg) => msg.id !== loadingMessageId
+            ),
+          };
+        });
+      } finally {
+        setIsSending(false);
+      }
+    },
+    [
+      sectionId,
+      isSending,
+      disabled,
+      value,
+      chatImageFile,
+      onChange,
+      clearChatImage,
+    ]
+  );
+
+  const handleSendMessage = useCallback(async () => {
+    if (!sectionId || !chatInput.trim() || isSending || disabled) return;
+    await handleSendMessageWithPrompt(chatInput.trim());
+  }, [sectionId, chatInput, isSending, disabled, handleSendMessageWithPrompt]);
+
+  // Load existing conversation when sectionId changes
   useEffect(() => {
     if (!sectionId) return;
     const conversationId = `custom-html:${sectionId}`;
     const existing = htmlChatService.getConversation(conversationId);
     setConversation(existing);
+    // Reset the processed flag when sectionId changes
+    processedPendingPromptRef.current = null;
   }, [sectionId]);
 
-  const handleSendMessage = useCallback(async () => {
-    if (!sectionId || !chatInput.trim() || isSending || disabled) return;
+  // Handle pending prompt from GenerateDialog - runs after conversation is loaded
+  useEffect(() => {
+    if (!sectionId) return;
+    if (isCodeView || disabled || isSending) return;
 
-    const conversationId = `custom-html:${sectionId}`;
+    // Check for pending prompt from GenerateDialog
+    const pendingPrompt = htmlChatService.getAndClearPendingPrompt(sectionId);
+    if (!pendingPrompt?.trim()) return;
 
-    setIsSending(true);
+    // Prevent processing the same prompt multiple times
+    // (in case effect runs again due to dependency changes)
+    if (processedPendingPromptRef.current === pendingPrompt) return;
+    processedPendingPromptRef.current = pendingPrompt;
+
+    const pendingImage = htmlChatService.getAndClearPendingImage(sectionId);
+    // Set image for preview (if any) - this is separate from sending
+    if (pendingImage) {
+      setChatImageFile(pendingImage);
+    }
+
+    // IMPORTANT: Do NOT set chatInput - we want to auto-send directly to chat bubbles.
+    // The handleSendMessageWithPrompt will perform optimistic UI and network call.
+    Promise.resolve().then(() => {
+      handleSendMessageWithPrompt(pendingPrompt.trim(), pendingImage);
+    });
+  }, [sectionId, isCodeView, disabled, isSending, handleSendMessageWithPrompt]);
+
+  const sendAudioToWhisper = useCallback(async (audioBlob: Blob) => {
     try {
-      const { conversation: updatedConversation, html } =
-        await htmlChatService.sendMessage({
-          conversationId,
-          userInput: chatInput.trim(),
-          currentHtml: value,
-          imageFile: chatImageFile,
-        });
-
-      setConversation(updatedConversation);
-      setChatInput("");
-      setChatImageFile(null);
-
-      if (html) {
-        onChange(html);
+      setIsTranscribing(true);
+      const transcript = await EditorAPI.transcribeAudio(audioBlob);
+      if (transcript) {
+        // Replace the current input with the latest transcript so each
+        // recording starts fresh instead of appending indefinitely.
+        setChatInput(transcript);
       }
     } catch (error) {
-      console.error("AI chat error:", error);
+      console.error("Error transcribing audio:", error);
     } finally {
-      setIsSending(false);
+      setIsTranscribing(false);
     }
-  }, [
-    sectionId,
-    chatInput,
-    isSending,
-    disabled,
-    value,
-    chatImageFile,
-    onChange,
-  ]);
+  }, []);
+
+  const handleToggleRecording = useCallback(async () => {
+    if (disabled || isSending || isTranscribing) return;
+
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
+    ) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      recordedChunksRef.current = [];
+      setIsRecording(true);
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        setIsRecording(false);
+        const audioBlob = new Blob(recordedChunksRef.current, {
+          type: "audio/webm",
+        });
+        if (audioBlob.size > 0) {
+          void sendAudioToWhisper(audioBlob);
+        }
+      };
+
+      recorder.start();
+    } catch (error) {
+      console.error("Error starting audio recording:", error);
+      setIsRecording(false);
+    }
+  }, [disabled, isSending, isTranscribing, sendAudioToWhisper]);
 
   return (
-    <div>
+    <div className={styles.container}>
+      {/* Tabs header */}
+      <div className={styles["tabs-header"]}>
+        {/* AI tab first */}
+        <button
+          type="button"
+          onClick={() => setIsCodeView(false)}
+          className={`${styles["tab-button"]} ${
+            isCodeView
+              ? styles["tab-button-inactive"]
+              : styles["tab-button-active"]
+          }`}
+        >
+          <div className={styles["sparkle-icon"]}>
+            <SparkleIcon className={styles["sparkle-main"]} />
+            <SparkleIcon
+              className={`${styles["sparkle-small"]} ${styles["sparkle-top-left"]}`}
+            />
+            <SparkleIcon
+              className={`${styles["sparkle-small"]} ${styles["sparkle-bottom-right"]}`}
+            />
+          </div>
+          Design with AI
+        </button>
+        {/* Code tab second */}
+        <button
+          type="button"
+          onClick={() => setIsCodeView(true)}
+          className={`${styles["tab-button"]} ${
+            isCodeView
+              ? styles["tab-button-active"]
+              : styles["tab-button-inactive"]
+          }`}
+        >
+          &lt;/&gt; Code View
+        </button>
+      </div>
+
       {/* Body: either Chat view or Code view */}
-      <div
-        style={{
-          height: "500px",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {isCodeView ? (
-          <>
-            {/* Code view header */}
-            <div
-              style={{
-                padding: "8px 12px",
-                borderBottom: "1px solid #e5e7eb",
-                backgroundColor: "#ffffff",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setIsCodeView(false)}
-                style={{
-                  border: "none",
-                  background: "none",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                  color: "#2563eb",
-                  padding: "4px 0",
-                }}
-              >
-                &lt; Back to Chat
-              </button>
-            </div>
+      {isCodeView ? (
+        <>
+          <div className={styles["code-view-container"]}>
+            <HtmlEditorWithValidation
+              value={value}
+              onChange={onChange}
+              disabled={disabled}
+              sectionId={sectionId}
+            />
+          </div>
 
-            {/* Code editor */}
-            <div style={{ flex: 1 }}>
-              <HtmlEditorWithValidation
-                value={value}
-                onChange={onChange}
-                disabled={disabled}
-                sectionId={sectionId}
-              />
+          {validationErrors.length > 0 && (
+            <div className={styles["error-container"]}>
+              <strong>Errors:</strong>
+              <ul className={styles["error-list"]}>
+                {validationErrors.map((e, idx) => (
+                  <li key={idx}>
+                    Line {e.line}, Column {e.column}: {e.message}
+                  </li>
+                ))}
+              </ul>
             </div>
-
-            {/* Validation errors (only in code view) */}
-            {validationErrors.length > 0 && (
-              <div
-                style={{
-                  padding: "8px 12px",
-                  backgroundColor: "#fee2e2",
-                  color: "#991b1b",
-                  fontSize: "12px",
-                  borderTop: "1px solid #fecaca",
-                }}
-              >
-                <strong>Errors:</strong>
-                <ul style={{ marginTop: "4px", paddingLeft: "18px" }}>
-                  {validationErrors.map((e, idx) => (
-                    <li key={idx}>
-                      Line {e.line}, Column {e.column}: {e.message}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            {/* Chat area */}
-            <div
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}
-            >
-              <div
-                style={{
-                  maxHeight: "100%",
-                  overflowY: "auto",
-                  padding: "4px 0",
-                  borderRadius: "6px",
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #e5e7eb",
-                }}
-              >
-                {conversation && conversation.messages.length > 0 ? (
-                  conversation.messages.map((msg: ChatMessage) => (
+          )}
+        </>
+      ) : (
+        <>
+          <div className={styles["chat-container"]}>
+            {/* Chat history - full height scroll */}
+            <div className={styles["chat-history"]}>
+              {conversation &&
+                conversation.messages.map((msg: ChatMessage) => {
+                  const isLoading =
+                    msg.role === ChatRole.ASSISTANT &&
+                    (!msg.content || msg.content.trim() === "");
+                  return (
                     <div
                       key={msg.id}
-                      style={{
-                        display: "flex",
-                        justifyContent:
-                          msg.role === ChatRole.USER
-                            ? "flex-end"
-                            : "flex-start",
-                        padding: "4px 8px",
-                      }}
+                      className={`${styles["message-wrapper"]} ${
+                        msg.role === ChatRole.USER
+                          ? styles["message-wrapper-user"]
+                          : styles["message-wrapper-assistant"]
+                      }`}
                     >
                       <div
-                        style={{
-                          maxWidth: "80%",
-                          padding: "8px 10px",
-                          borderRadius: "12px",
-                          fontSize: "12px",
-                          lineHeight: 1.4,
-                          backgroundColor:
-                            msg.role === ChatRole.USER ? "#dbeafe" : "#f3f4f6",
-                          color: "#111827",
-                        }}
+                        className={`${styles["message-bubble"]} ${
+                          msg.role === ChatRole.USER
+                            ? styles["message-bubble-user"]
+                            : styles["message-bubble-assistant"]
+                        } ${isLoading ? styles["message-bubble-loading"] : ""}`}
                       >
-                        {msg.content}
+                        {isLoading ? (
+                          <div className={styles["loading-container"]}>
+                            <div className={styles["loading-dot"]} />
+                            <div
+                              className={`${styles["loading-dot"]} ${styles["loading-dot-delay-1"]}`}
+                            />
+                            <div
+                              className={`${styles["loading-dot"]} ${styles["loading-dot-delay-2"]}`}
+                            />
+                          </div>
+                        ) : (
+                          msg.content
+                        )}
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <span
-                    style={{
-                      padding: "8px 10px",
-                      fontSize: "12px",
-                      color: "#6b7280",
-                    }}
-                  >
-                    Ask AI to help you write or improve this HTML, CSS, and JS.
-                  </span>
-                )}
-              </div>
+                  );
+                })}
+            </div>
 
-              {/* Chat input */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "8px",
-                  alignItems: "flex-end",
-                }}
-              >
+            {/* Chat input - anchored at bottom */}
+            <div className={styles["input-container"]}>
+              <div className={styles["textarea-wrapper"]}>
+                {chatImagePreviewUrl && (
+                  <div className={styles["image-preview-container"]}>
+                    <div className={styles["image-preview-wrapper"]}>
+                      <img
+                        src={chatImagePreviewUrl}
+                        alt={chatImageFile?.name || "Attached image"}
+                        className={styles["image-preview"]}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setChatImageFile(null)}
+                        className={styles["image-remove-button"]}
+                        aria-label="Remove attached image"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <textarea
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    // Enter to send, Shift+Enter for newline (common chat UX)
+                    if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
                       handleSendMessage();
                     }
                   }}
-                  placeholder="Ask to AI..."
+                  placeholder={placeholder}
                   disabled={isSending || disabled}
-                  style={{
-                    flex: 1,
-                    padding: "8px",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "4px",
-                    fontSize: "12px",
-                    minHeight: "40px",
-                    maxHeight: "80px",
-                    resize: "vertical",
-                    fontFamily: "inherit",
-                  }}
+                  className={`${styles["chat-textarea"]} ${
+                    chatImagePreviewUrl
+                      ? styles["chat-textarea-with-image"]
+                      : ""
+                  }`}
                 />
-                <button
-                  type="button"
-                  onClick={handleSendMessage}
-                  disabled={!chatInput.trim() || isSending || disabled}
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "999px",
-                    border: "none",
-                    backgroundColor:
-                      !chatInput.trim() || isSending || disabled
-                        ? "#9ca3af"
-                        : "#1d4ed8",
-                    color: "white",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor:
-                      !chatInput.trim() || isSending || disabled
-                        ? "not-allowed"
-                        : "pointer",
-                    fontSize: "16px",
-                  }}
-                >
-                  ↑
-                </button>
               </div>
-
-              {/* Footer: attach image + Code View button */}
-              <div
-                style={{
-                  marginTop: "4px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "8px",
-                  fontSize: "11px",
-                  color: "#4b5563",
+              <button
+                type="button"
+                onClick={() => {
+                  if (isSending || disabled) return;
+                  openFilePicker();
                 }}
+                disabled={isSending || disabled}
+                className={`${styles["input-button"]} ${styles["plus-button"]}`}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <label
-                    style={{
-                      cursor: isSending || disabled ? "not-allowed" : "pointer",
-                      textDecoration: "underline",
-                    }}
+                <ImageUploadIcon />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className={styles["file-input"]}
+                disabled={isSending || disabled}
+                onChange={handleFileChange}
+              />
+              <button
+                type="button"
+                onClick={handleToggleRecording}
+                disabled={isSending || disabled || isTranscribing}
+                className={`${styles["input-button"]} ${styles["mic-button"]} ${
+                  isRecording ? styles["mic-button-recording"] : ""
+                }`}
+                aria-label="Record voice prompt"
+              >
+                {isRecording ? (
+                  <span className={styles["mic-levels"]}>
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    Attach image
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={{ display: "none" }}
-                      disabled={isSending || disabled}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) {
-                          setChatImageFile(null);
-                          return;
-                        }
-                        if (!file.type.startsWith("image/")) {
-                          console.error("Selected file is not an image");
-                          setChatImageFile(null);
-                          return;
-                        }
-                        setChatImageFile(file);
-                      }}
-                    />
-                  </label>
-                  {chatImageFile && (
-                    <span
-                      style={{
-                        whiteSpace: "nowrap",
-                        textOverflow: "ellipsis",
-                        overflow: "hidden",
-                        maxWidth: "200px",
-                      }}
-                      title={chatImageFile.name}
-                    >
-                      {chatImageFile.name}
-                    </span>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsCodeView(true)}
-                  style={{
-                    borderRadius: "999px",
-                    border: "1px solid #d1d5db",
-                    padding: "4px 10px",
-                    backgroundColor: "#ffffff",
-                    cursor: "pointer",
-                    fontSize: "11px",
-                  }}
+                    <path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z" />
+                    <path d="M19 10a7 7 0 0 1-14 0" />
+                    <line x1="12" y1="17" x2="12" y2="21" />
+                    <line x1="8" y1="21" x2="16" y2="21" />
+                  </svg>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handleSendMessage}
+                disabled={isSending || disabled}
+                className={`${styles["input-button"]} ${styles["send-button"]}`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 12 17"
+                  fill="none"
                 >
-                  &lt;/&gt; Code View
-                </button>
-              </div>
+                  <path
+                    d="M4.99262 0.2197C5.28551 -0.0731945 5.76039 -0.0731945 6.05328 0.2197L10.8262 4.99267C11.1191 5.28556 11.1191 5.76044 10.8262 6.05333C10.5334 6.34622 10.0585 6.34622 9.76559 6.05333L5.52295 1.81069L1.28031 6.05333C0.987415 6.34622 0.512541 6.34622 0.219648 6.05333C-0.0732457 5.76044 -0.0732457 5.28556 0.219648 4.99267L4.99262 0.2197ZM5.52295 16.2183L4.77295 16.2183L4.77295 0.75003L5.52295 0.75003L6.27295 0.75003L6.27295 16.2183L5.52295 16.2183Z"
+                    fill="white"
+                  />
+                </svg>
+              </button>
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

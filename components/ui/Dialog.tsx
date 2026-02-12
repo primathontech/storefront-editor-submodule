@@ -8,6 +8,7 @@ interface DialogProps {
   title?: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  headerAction?: React.ReactNode;
   size?: "sm" | "md" | "lg" | "xl";
 }
 
@@ -17,6 +18,7 @@ export const Dialog: React.FC<DialogProps> = ({
   title,
   children,
   footer,
+  headerAction,
   size = "md",
 }) => {
   if (!open) return null;
@@ -44,16 +46,24 @@ export const Dialog: React.FC<DialogProps> = ({
       onClick={handleOverlayClick}
     >
       <div
-        className={`w-full ${maxWidthClass} rounded-lg bg-white shadow-xl border border-gray-200`}
+        className={`w-full ${maxWidthClass} rounded-lg bg-editor-surface shadow-xl border border-editor-border`}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          {title && (
-            <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-          )}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-editor-border">
+          <div className="flex items-center gap-4 flex-1">
+            {title &&
+              (typeof title === "string" ? (
+                <h2 className="text-sm font-semibold text-editor-text">
+                  {title}
+                </h2>
+              ) : (
+                <div className="flex items-center gap-2">{title}</div>
+              ))}
+            {headerAction && <div className="ml-auto mr-2">{headerAction}</div>}
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-1 text-editor-text-muted hover:text-editor-text hover:bg-editor-surface-muted rounded-full transition-colors"
             aria-label="Close dialog"
           >
             <svg
@@ -75,7 +85,7 @@ export const Dialog: React.FC<DialogProps> = ({
         <div className="max-h-[80vh] overflow-y-auto px-4 py-3">{children}</div>
 
         {footer && (
-          <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-gray-100">
+          <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-editor-border">
             {footer}
           </div>
         )}

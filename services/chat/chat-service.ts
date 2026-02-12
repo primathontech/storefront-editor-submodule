@@ -34,6 +34,8 @@ export interface SendMessageResult {
 export class ChatService {
   private readonly repository: ConversationRepository;
   private readonly llmClient: LLMClient;
+  private pendingPrompts: Map<string, string> = new Map();
+  private pendingImages: Map<string, File> = new Map();
 
   constructor(options?: {
     repository?: ConversationRepository;
@@ -49,6 +51,34 @@ export class ChatService {
       this.repository.get(conversationId) ??
       createConversation(conversationId, [])
     );
+  }
+
+  setPendingPrompt(sectionId: string, prompt: string): void {
+    const conversationId = `custom-html:${sectionId}`;
+    this.pendingPrompts.set(conversationId, prompt);
+  }
+
+  getAndClearPendingPrompt(sectionId: string): string | undefined {
+    const conversationId = `custom-html:${sectionId}`;
+    const prompt = this.pendingPrompts.get(conversationId);
+    if (prompt) {
+      this.pendingPrompts.delete(conversationId);
+    }
+    return prompt;
+  }
+
+  setPendingImage(sectionId: string, file: File): void {
+    const conversationId = `custom-html:${sectionId}`;
+    this.pendingImages.set(conversationId, file);
+  }
+
+  getAndClearPendingImage(sectionId: string): File | undefined {
+    const conversationId = `custom-html:${sectionId}`;
+    const file = this.pendingImages.get(conversationId);
+    if (file) {
+      this.pendingImages.delete(conversationId);
+    }
+    return file;
   }
 
   async sendMessage(params: SendMessageParams): Promise<SendMessageResult> {

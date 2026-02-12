@@ -1,6 +1,7 @@
 import { ChatMessage, ChatRole } from "../../models/chat-types";
 import { readFileAsBase64 } from "../../utils/ai-utils";
 import { HTML_AI_MODEL, HTML_SYSTEM_PROMPT } from "../html-ai-prompt";
+import { EditorAPI } from "../api";
 
 /**
  * JSON schema for structured output from Claude.
@@ -60,11 +61,9 @@ interface AnthropicMessage {
  * types to the rest of the codebase.
  */
 export class ClaudeClient implements LLMClient {
-  private readonly apiKey: string | undefined;
   private readonly model: string;
 
   constructor(model?: string) {
-    this.apiKey = process.env.NEXT_PUBLIC_AI_API_KEY;
     this.model = model || HTML_AI_MODEL;
 
     if (!this.model) {
@@ -77,11 +76,6 @@ export class ClaudeClient implements LLMClient {
     currentHtml,
     imageFile,
   }: LLMClientParams): Promise<{ assistant: ChatMessage; html: string }> {
-    const apiKey = this.apiKey;
-    if (!apiKey) {
-      throw new Error("AI API key is not configured");
-    }
-
     if (!this.model) {
       throw new Error("AI model is not configured");
     }
@@ -190,33 +184,8 @@ export class ClaudeClient implements LLMClient {
       throw new Error(`Invalid model configuration: "${requestBody.model}"`);
     }
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "anthropic-beta": "structured-outputs-2025-11-13",
-        "content-type": "application/json",
-        "anthropic-dangerous-direct-browser-access": "true",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("Anthropic API error:", {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorData,
-      });
-      throw new Error(
-        `API error: ${response.status} - ${
-          (errorData as any)?.error?.message || response.statusText
-        }`
-      );
-    }
-
-    const data = await response.json();
+    // Call Anthropic via server-side proxy route to keep API key on the server.
+    const data = await EditorAPI.anthropicMessages(requestBody);
     const jsonText = data.content?.[0]?.text || "";
 
     // Parse structured JSON response (guaranteed format via response_format)

@@ -54,7 +54,7 @@ export const HtmlEditorWithValidation: React.FC<
 
   return (
     <Editor
-      height="500px"
+      height="700px"
       language="html"
       value={value}
       onChange={(val) => {

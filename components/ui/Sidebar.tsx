@@ -129,7 +129,7 @@ const SidebarContent = React.forwardRef<HTMLDivElement, SidebarContentProps>(
     return (
       <div
         ref={ref}
-        className={cn("flex-1 overflow-auto", className)}
+        className={cn("flex-1 overflow-auto flex flex-col min-h-0", className)}
         style={style}
         {...props}
       >

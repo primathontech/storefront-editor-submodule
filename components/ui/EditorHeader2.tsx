@@ -123,22 +123,25 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
   const MODES = ["edit", "preview"] as const;
 
   return (
-    <header className="w-full bg-white border-b border-gray-200 flex items-center justify-between px-6 h-14 shadow-sm z-10">
+    <header className="w-full bg-editor-surface border-b border-editor-border flex items-center justify-between px-6 h-14 shadow-sm z-10">
       {/* Left side - Navigation and Theme Info */}
       <div className="flex items-center gap-4">
-        <span className="text-lg font-semibold">
+        <span className="text-lg font-semibold text-editor-text">
           Theme: {theme?.name || theme?.id}
         </span>
 
         {/* Template Dropdown */}
         {theme?.templateStructure?.length > 0 && (
           <div className="flex items-center gap-2">
-            <label htmlFor="template-select" className="text-sm text-gray-600">
+            <label
+              htmlFor="template-select"
+              className="text-sm text-editor-text-muted"
+            >
               Template:
             </label>
             <select
               id="template-select"
-              className="px-3 py-1 border rounded text-sm min-w-[300px]"
+              className="px-3 py-1 border border-editor-border rounded text-sm min-w-[300px] bg-editor-surface text-editor-text"
               value={selectedTemplateId || ""}
               onChange={handleSelectChange}
               aria-label="Select template to edit"
@@ -168,7 +171,7 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
           disabled={isSaveDisabled}
           className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
             isSaveDisabled
-              ? "bg-gray-400 text-white cursor-not-allowed"
+              ? "bg-editor-surface-muted text-editor-text-muted cursor-not-allowed"
               : "bg-green-600 text-white hover:bg-green-700"
           }`}
           title={saveButtonTitle}
@@ -186,8 +189,8 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
               key={d}
               className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                 device === d
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-700"
+                  ? "bg-editor-accent text-white"
+                  : "bg-editor-surface-muted text-editor-text-muted"
               } cursor-pointer`}
               onClick={() => setDevice(d)}
               title={`Switch to ${d.charAt(0).toUpperCase() + d.slice(1)} view`}
@@ -203,7 +206,7 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
               className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                 mode === m
                   ? "bg-green-600 text-white"
-                  : "bg-gray-200 text-gray-700"
+                  : "bg-editor-surface-muted text-editor-text-muted"
               } cursor-pointer`}
               onClick={() => setMode(m)}
               title={`Switch to ${m.charAt(0).toUpperCase() + m.slice(1)} mode`}
