@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DynamicForm } from "./DynamicForm";
 import { Input } from "./Input";
 import { SimpleSelect } from "./SimpleSelect";
 import {
@@ -31,52 +30,39 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useEditorState } from "../../stores/useEditorState";
-import { sectionRegistry } from "@/app/editor/schemas/section-registry";
-import { widgetRegistry } from "@/cms/schemas/widget-registry";
-import { TranslationService } from "@/lib/i18n/translation-service";
 import { SectionLibraryDialog } from "./SectionLibraryDialog";
-import { DataSourceEditor } from "./DataSourceEditor";
 import { availableSectionsRegistry } from "@/registries/available-sections-registry";
 
 interface BuilderToolbarProps {
   pageConfig: any;
   templateName?: string;
-  translationService?: TranslationService | null;
   currentLocale: string;
   onLocaleChange: (locale: string) => void;
   supportedLanguages?: string[];
-  routeContext: any;
   onRouteHandleChange: (handle: string) => void;
 }
 
 export default function BuilderToolbar({
   pageConfig,
   templateName,
-  translationService,
   currentLocale,
   onLocaleChange,
   supportedLanguages = ["en"], // Default to English if not provided
-  routeContext,
   onRouteHandleChange,
 }: BuilderToolbarProps) {
   const {
     selectedSectionId,
     selectedWidgetId,
     expandedSections,
-    showSettingsDrawer,
     setSelectedSection,
     setSelectedWidget,
     setShowSettingsDrawer,
     addSectionFromLibrary,
-    updateSection,
-    updateWidget,
     removeSection,
-    removeWidget,
     moveSection,
     setPageConfig,
     setExpandedSections,
-    updateDataSource,
-    pendingPageConfig,
+    htmlValidationErrors,
   } = useEditorState();
 
   const [isAddSectionModalOpen, setIsAddSectionModalOpen] = useState(false);
@@ -101,28 +87,6 @@ export default function BuilderToolbar({
       setExpandedSections(expandedSections);
     }
   }, [pageConfig, setPageConfig, setExpandedSections]);
-
-  // Get current page config (pending or committed) for reading latest data source values
-  const currentPageConfig = pendingPageConfig || pageConfig;
-
-  // Get selected section and widget (before early return)
-  const selectedSection =
-    selectedSectionId !== null && currentPageConfig?.sections
-      ? currentPageConfig.sections.find((s: any) => s.id === selectedSectionId)
-      : null;
-  const selectedSectionSchema =
-    selectedSection && sectionRegistry[selectedSection.type];
-  const selectedWidget =
-    selectedSection && selectedWidgetId !== null
-      ? selectedSection.widgets.find((w: any) => w.id === selectedWidgetId)
-      : null;
-  const selectedWidgetSchema =
-    selectedWidget && widgetRegistry[selectedWidget.type];
-
-  const selectedDataSource =
-    selectedWidget?.dataSourceKey && currentPageConfig?.dataSources
-      ? currentPageConfig.dataSources[selectedWidget.dataSourceKey]
-      : null;
 
   // Defensive check for pageConfig (after all hooks)
   if (!pageConfig || !Array.isArray(pageConfig.sections)) {
@@ -154,71 +118,15 @@ export default function BuilderToolbar({
     });
   };
 
-  const handleSectionSettingChange = (key: string, value: any) => {
-    if (selectedSectionId === null) return;
-    const currentConfig = currentPageConfig || pageConfig;
-    const section = currentConfig?.sections?.find(
-      (s: any) => s.id === selectedSectionId
-    );
-    if (!section) return;
-
-    updateSection(selectedSectionId, {
-      settings: {
-        ...section.settings,
-        [key]: value,
-      },
-    });
-  };
-
-  const handleWidgetSettingChange = (key: string, value: any) => {
-    if (selectedSectionId === null || selectedWidgetId === null) {
-      return;
-    }
-    const section = pageConfig.sections.find(
-      (s: any) => s.id === selectedSectionId
-    );
-    if (!section) {
-      return;
-    }
-    const widget = section.widgets.find((w: any) => w.id === selectedWidgetId);
-    if (!widget) {
-      return;
-    }
-
-    updateWidget(selectedSectionId, selectedWidgetId, {
-      settings: {
-        ...widget.settings,
-        [key]: value,
-      },
-    });
-  };
-
   const handleSectionSelect = (sectionId: string) => {
     setSelectedSection(sectionId);
+    setShowSettingsDrawer(true);
   };
 
   const handleWidgetSelect = (widgetId: string, sectionId: string) => {
     setSelectedSection(sectionId);
     setSelectedWidget(widgetId);
-  };
-
-  // Convert schema to DynamicForm format
-  const convertSchemaToFormSchema = (schema: any) => {
-    const formSchema: any = {};
-    Object.entries(schema).forEach(([key, config]: [string, any]) => {
-      formSchema[key] = {
-        type: config.type,
-        label: config.label,
-        options: config.options,
-        min: config.min,
-        max: config.max,
-        step: config.step,
-        placeholder: config.placeholder,
-        fields: config.fields,
-        default: config.default,
-      };
-    });
-    return formSchema;
+    setShowSettingsDrawer(true);
   };
 
   // dnd-kit setup
@@ -249,11 +157,9 @@ export default function BuilderToolbar({
   // Sortable Section wrapper
   function SortableSection({
     section,
-    idx,
     children,
   }: {
     section: any;
-    idx: number;
     children: React.ReactNode;
   }) {
     const {
@@ -383,14 +289,10 @@ export default function BuilderToolbar({
                       <SidebarMenu>
                         {pageConfig.sections.map(
                           (section: any, index: number) => {
-                            const isExpanded = expandedSections.has(section.id);
-                            const isSelected = selectedSectionId === section.id;
-                            const sectionSchema = sectionRegistry[section.type];
                             return (
                               <SortableSection
                                 key={section.id}
                                 section={section}
-                                idx={index}
                               >
                                 {/* Section Header */}
                                 {/* Remove Section Button */}
@@ -398,40 +300,65 @@ export default function BuilderToolbar({
                                   const isInLibrary = isSectionInLibrary(
                                     section.id
                                   );
+                                  const sectionErrors =
+                                    htmlValidationErrors[section.id] || [];
+                                  const hasErrors = sectionErrors.length > 0;
                                   return (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (isInLibrary) {
-                                          removeSection(section.id);
+                                    <div className="flex items-center">
+                                      {hasErrors && (
+                                        <div
+                                          className="mr-auto p-1 text-red-500"
+                                          title={`${sectionErrors.length} HTML validation error${sectionErrors.length !== 1 ? "s" : ""}`}
+                                        >
+                                          <svg
+                                            className="w-4 h-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth={2}
+                                              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                            />
+                                          </svg>
+                                        </div>
+                                      )}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (isInLibrary) {
+                                            removeSection(section.id);
+                                          }
+                                        }}
+                                        disabled={!isInLibrary}
+                                        className={`ml-auto block p-1 rounded transition-colors ${
+                                          isInLibrary
+                                            ? "text-red-400 hover:text-red-600 hover:bg-red-100 cursor-pointer"
+                                            : "text-gray-300 cursor-not-allowed opacity-50"
+                                        }`}
+                                        title={
+                                          isInLibrary
+                                            ? "Remove section"
+                                            : "This section is not removable"
                                         }
-                                      }}
-                                      disabled={!isInLibrary}
-                                      className={`ml-auto block p-1 rounded transition-colors ${
-                                        isInLibrary
-                                          ? "text-red-400 hover:text-red-600 hover:bg-red-100 cursor-pointer"
-                                          : "text-gray-300 cursor-not-allowed opacity-50"
-                                      }`}
-                                      title={
-                                        isInLibrary
-                                          ? "Remove section"
-                                          : "This section is not removable"
-                                      }
-                                    >
-                                      <svg
-                                        className="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
                                       >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M6 18L18 6M6 6l12 12"
-                                        />
-                                      </svg>
-                                    </button>
+                                        <svg
+                                          className="w-4 h-4"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M6 18L18 6M6 6l12 12"
+                                          />
+                                        </svg>
+                                      </button>
+                                    </div>
                                   );
                                 })()}
                                 {/* </SidebarMenuButton> */}
@@ -519,108 +446,6 @@ export default function BuilderToolbar({
         </SidebarContent>
       </Sidebar>
 
-      {/* Overlay Settings Drawer */}
-      {showSettingsDrawer && (
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-sm z-10">
-          <div className="absolute inset-0 bg-white shadow-xl transform transition-transform duration-300 ease-in-out translate-x-0 flex flex-col">
-            {/* Settings Header */}
-            <div className="p-4 border-b border-gray-200 bg-gray-50/50">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-900">
-                  {selectedWidget
-                    ? `${
-                        selectedWidget.name || selectedWidgetSchema?.name
-                      } Settings`
-                    : selectedSection
-                      ? `${selectedSectionSchema?.name} Settings`
-                      : "Settings"}
-                </h3>
-                <button
-                  onClick={() => {
-                    setShowSettingsDrawer(false);
-                    setSelectedSection(null);
-                    setSelectedWidget(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
-                  title="Close settings"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Settings Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {/* Section Settings */}
-              {selectedSection && selectedSectionSchema && (
-                <DynamicForm
-                  schema={convertSchemaToFormSchema(
-                    selectedSectionSchema.settingsSchema
-                  )}
-                  values={selectedSection.settings}
-                  onUpdate={handleSectionSettingChange}
-                  translationService={translationService}
-                />
-              )}
-
-              <br />
-
-              {selectedWidget &&
-                selectedDataSource &&
-                selectedWidget.dataSourceKey && (
-                  <DataSourceEditor
-                    dataSource={selectedDataSource}
-                    onUpdateParams={(updates) =>
-                      updateDataSource(selectedWidget.dataSourceKey, {
-                        params: {
-                          ...(selectedDataSource.params || {}),
-                          ...updates,
-                        },
-                      })
-                    }
-                  />
-                )}
-
-              <br />
-
-              {/* Widget Settings */}
-              {selectedWidget && selectedWidgetSchema && (
-                <DynamicForm
-                  schema={convertSchemaToFormSchema(
-                    selectedWidgetSchema.settingsSchema
-                  )}
-                  values={selectedWidget.settings}
-                  onUpdate={handleWidgetSettingChange}
-                  translationService={translationService}
-                />
-              )}
-
-              {/* No Selection State */}
-              {!selectedSection && !selectedWidget && (
-                <div className="text-center py-12 text-gray-500">
-                  <div className="text-3xl mb-3 opacity-50">⚙️</div>
-                  <p className="text-sm font-medium mb-1">No item selected</p>
-                  <p className="text-xs text-gray-400">
-                    Select a section or widget to edit settings
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
       {/* Add Section Modal */}
       <SectionLibraryDialog
         open={isAddSectionModalOpen}

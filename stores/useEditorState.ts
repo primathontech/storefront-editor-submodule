@@ -8,6 +8,7 @@ import { useDualTranslationStore } from "./dualTranslationStore";
 import { processSectionWidgets } from "../utils/section-translation-utils";
 import { translationUtils } from "./dualTranslationStore";
 import { DEFAULT_BREAKPOINTS } from "@/lib/page-builder/models/responsive-types";
+import { COMMON_WIDGETS } from "@/constants/theme-constants";
 
 // Widget to Data Source mapping
 const WIDGET_DATA_SOURCE_MAP: Record<string, string> = {
@@ -60,6 +61,10 @@ export interface EditorState {
   showSettingsDrawer: boolean;
   mode: "edit" | "preview";
   device: "desktop" | "mobile" | "tablet" | "fullscreen";
+  htmlValidationErrors: Record<
+    string,
+    Array<{ line: number; column: number; message: string }>
+  >;
 
   // Actions
   setPageConfig: (config: any) => void;
@@ -81,6 +86,12 @@ export interface EditorState {
   setShowSettingsDrawer: (show: boolean) => void;
   setMode: (mode: "edit" | "preview") => void;
   setDevice: (device: "desktop" | "mobile" | "tablet" | "fullscreen") => void;
+  setHtmlValidationErrors: (
+    sectionId: string,
+    errors: Array<{ line: number; column: number; message: string }>
+  ) => void;
+  clearHtmlValidationErrors: (sectionId: string) => void;
+  validateAllHtml: () => Promise<void>;
 
   // Section Actions
   addSection: (
@@ -139,6 +150,7 @@ export const useEditorState = create<EditorState>()(
       showSettingsDrawer: false,
       mode: "edit",
       device: "desktop",
+      htmlValidationErrors: {},
 
       // Page Configuration Actions
       setPageConfig: (config) => {
@@ -229,6 +241,91 @@ export const useEditorState = create<EditorState>()(
 
       setMode: (mode) => set({ mode }),
       setDevice: (device) => set({ device }),
+
+      // HTML Validation Errors
+      setHtmlValidationErrors: (sectionId, errors) => {
+        set((state) => ({
+          htmlValidationErrors: {
+            ...state.htmlValidationErrors,
+            [sectionId]: errors,
+          },
+        }));
+      },
+
+      clearHtmlValidationErrors: (sectionId) => {
+        set((state) => {
+          const { [sectionId]: removed, ...remaining } =
+            state.htmlValidationErrors;
+          return { htmlValidationErrors: remaining };
+        });
+      },
+
+      validateAllHtml: async () => {
+        try {
+          const state = get();
+          const pageConfig = state.pageConfig;
+          if (!pageConfig?.sections) return;
+
+          const { validateHtmlContent } =
+            await import("../utils/htmlValidation");
+
+          const sections = pageConfig.sections || [];
+
+          // Collect all validation tasks
+          const validationTasks: Array<{
+            sectionId: string;
+            promise: Promise<
+              Array<{ line: number; column: number; message: string }>
+            >;
+          }> = [];
+
+          for (const section of sections) {
+            const widgets = section.widgets || [];
+            for (const widget of widgets) {
+              if (widget.type === COMMON_WIDGETS.CUSTOM_HTML) {
+                const html = widget.settings?.html || "";
+                validationTasks.push({
+                  sectionId: section.id,
+                  promise: validateHtmlContent(html),
+                });
+              }
+            }
+          }
+
+          // Run all validations in parallel (allSettled ensures all complete even if one fails)
+          const results = await Promise.allSettled(
+            validationTasks.map((task) => task.promise)
+          );
+
+          // Aggregate errors by section
+          const errorsBySection: Record<
+            string,
+            Array<{ line: number; column: number; message: string }>
+          > = {};
+
+          validationTasks.forEach(({ sectionId }, index) => {
+            const result = results[index];
+            if (result.status === "fulfilled" && result.value.length > 0) {
+              if (!errorsBySection[sectionId]) {
+                errorsBySection[sectionId] = [];
+              }
+              errorsBySection[sectionId].push(...result.value);
+            }
+            // If rejected, validation already handled error internally, so we skip it
+          });
+
+          // Update store with all errors
+          set((state) => ({
+            htmlValidationErrors: {
+              ...state.htmlValidationErrors,
+              ...errorsBySection,
+            },
+          }));
+        } catch (error) {
+          console.error("Error in validateAllHtml:", error);
+          throw error;
+        }
+      },
 
       // Section Actions
       addSection: (section, insertIndex, extraDataSources) => {
@@ -474,6 +571,10 @@ export const useEditorState = create<EditorState>()(
           // Remove the section
           sections.splice(sectionIndex, 1);
 
+          // Remove validation errors for this section
+          const { [sectionId]: removedErrors, ...remainingErrors } =
+            state.htmlValidationErrors;
+
           const nextConfig = { ...baseConfig, sections, dataSources };
 
           // If we touched data sources, stage config and refetch; otherwise commit directly
@@ -484,6 +585,7 @@ export const useEditorState = create<EditorState>()(
               selectedWidgetId: null,
               showSettingsDrawer: false,
               pageDataStale: true,
+              htmlValidationErrors: remainingErrors,
             };
           }
 
@@ -492,6 +594,7 @@ export const useEditorState = create<EditorState>()(
             selectedSectionId: null,
             selectedWidgetId: null,
             showSettingsDrawer: false,
+            htmlValidationErrors: remainingErrors,
           };
         });
       },

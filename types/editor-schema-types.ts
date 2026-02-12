@@ -32,6 +32,7 @@ export interface SectionSchema {
         | "image"
         | "faq"
         | "richtext"
+        | "html"
         | "objectArray"
         | "array";
       label?: string;

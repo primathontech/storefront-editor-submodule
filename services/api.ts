@@ -271,6 +271,62 @@ export class EditorAPI {
       return [];
     }
   }
+
+  /**
+   * Transcribe audio using OpenAI Whisper
+   */
+  static async transcribeAudio(audioBlob: Blob): Promise<string> {
+    try {
+      const formData = new FormData();
+      formData.append("file", audioBlob, "voice.webm");
+
+      const response = await fetch(`/editor/api/whisper`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Whisper API error:", errorText);
+        throw new Error(
+          `Failed to transcribe audio: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+      return data.text || "";
+    } catch (error) {
+      console.error("Error transcribing audio:", error);
+      throw new Error("Failed to transcribe audio");
+    }
+  }
+
+  /**
+   * Call Anthropic Messages API via server-side proxy route.
+   * This keeps the API key on the server.
+   */
+  static async anthropicMessages(requestBody: any): Promise<any> {
+    try {
+      const response = await fetch(`/editor/api/anthropic`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestBody }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "");
+        console.error("Anthropic proxy error:", errorText);
+        throw new Error(
+          `Failed to call Anthropic proxy: ${response.status} ${response.statusText}`
+        );
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error calling Anthropic proxy:", error);
+      throw new Error("Failed to generate AI response");
+    }
+  }
 }
 
 // Export API

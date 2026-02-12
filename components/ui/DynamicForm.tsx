@@ -9,6 +9,7 @@ import { SimpleSelect } from "./SimpleSelect";
 import { ImageInput } from "./ImageInput";
 import { FAQInput } from "./FAQInput";
 import { RichTextInput } from "./RichTextInput";
+import { HtmlInput } from "./HtmlInput";
 import { ObjectArrayInput } from "./ObjectArrayInput";
 import { ArrayInput } from "./ArrayInput";
 import type { BaseComponentProps } from "../types";
@@ -30,7 +31,8 @@ export interface FormFieldSchema {
     | "faq"
     | "richtext"
     | "objectArray"
-    | "array";
+    | "array"
+    | "html";
   label?: string;
   options?: { value: string; label: string }[];
   min?: number;
@@ -87,6 +89,11 @@ export interface DynamicFormProps extends BaseComponentProps {
    * Translation service for handling translation keys
    */
   translationService?: TranslationService | null;
+
+  /**
+   * Section ID for HTML validation error tracking
+   */
+  sectionId?: string;
 }
 
 // Translation utilities hook
@@ -124,12 +131,18 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
       variant = "primary",
       style,
       translationService,
+      sectionId,
       ...props
     },
     ref
   ) => {
     const { translateValue, handleTranslationChange } = useTranslationUtils(
       translationService || null
+    );
+
+    const hasHtmlField = React.useMemo(
+      () => Object.values(schema).some((field) => field.type === "html"),
+      [schema]
     );
 
     const renderField = (key: string, fieldSchema: FormFieldSchema) => {
@@ -328,6 +341,23 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
             />
           );
 
+        case "html":
+          const htmlDisplay = translateValue(value) || "";
+          const handleHtmlChange = (newValue: string) => {
+            const finalValue = handleTranslationChange(value, newValue);
+            onUpdate(key, finalValue);
+          };
+
+          return (
+            <HtmlInput
+              value={htmlDisplay}
+              onChange={handleHtmlChange}
+              disabled={fieldDisabled}
+              placeholder={fieldSchema.placeholder}
+              sectionId={sectionId}
+            />
+          );
+
         case "objectArray":
           // Check if this is a translation key array (value is a string starting with "t:")
           const isTranslationKeyArray =
@@ -455,7 +485,11 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
 
     return (
       <div
-        className={cn("space-y-3", className)}
+        className={cn(
+          "space-y-3",
+          hasHtmlField && "flex flex-col flex-1 min-h-0",
+          className
+        )}
         ref={ref}
         style={style}
         {...props}

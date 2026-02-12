@@ -5,6 +5,7 @@ import { FourSidedSpacingInput } from "./FourSidedSpacingInput";
 import { Label } from "@/ui/atomic";
 import { cn } from "../../utils/utils";
 import { useEditorState } from "../../stores/useEditorState";
+import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
 
 export interface ResponsiveSpacingValue {
   mobile?: {
@@ -47,6 +48,7 @@ const ResponsiveSpacingInput = React.forwardRef<
     ref
   ) => {
     const device = useEditorState((state) => state.device);
+    const [isCollapsed, setIsCollapsed] = React.useState(true);
 
     // Map device to breakpoint: desktop/fullscreen → desktop, tablet → tablet, mobile → mobile
     const breakpoint: "mobile" | "tablet" | "desktop" =
@@ -94,40 +96,53 @@ const ResponsiveSpacingInput = React.forwardRef<
 
     return (
       <div ref={ref} className={cn("space-y-2", className)}>
-        {label && (
-          <Label className="text-xs font-semibold text-gray-800">{label}</Label>
-        )}
+        <button
+          type="button"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="flex items-center justify-between w-full group"
+        >
+          <Label className="text-xs font-semibold text-gray-800 cursor-pointer group-hover:text-gray-900">
+            {label || "Spacing"}
+          </Label>
+          {isCollapsed ? (
+            <ChevronDownIcon className="h-4 w-4 text-gray-600 group-hover:text-gray-900" />
+          ) : (
+            <ChevronUpIcon className="h-4 w-4 text-gray-600 group-hover:text-gray-900" />
+          )}
+        </button>
 
-        <div className="space-y-4">
-          <FourSidedSpacingInput
-            label="Padding"
-            value={
-              currentBreakpointValue.padding || {
-                top: 0,
-                right: 0,
-                bottom: 0,
-                left: 0,
-              }
-            }
-            onChange={handlePaddingChange}
-            disabled={disabled}
-          />
-          {showMargin && (
+        {!isCollapsed && (
+          <div className="space-y-4">
             <FourSidedSpacingInput
-              label="Margin"
+              label="Padding"
               value={
-                currentBreakpointValue.margin || {
+                currentBreakpointValue.padding || {
                   top: 0,
                   right: 0,
                   bottom: 0,
                   left: 0,
                 }
               }
-              onChange={handleMarginChange}
+              onChange={handlePaddingChange}
               disabled={disabled}
             />
-          )}
-        </div>
+            {showMargin && (
+              <FourSidedSpacingInput
+                label="Margin"
+                value={
+                  currentBreakpointValue.margin || {
+                    top: 0,
+                    right: 0,
+                    bottom: 0,
+                    left: 0,
+                  }
+                }
+                onChange={handleMarginChange}
+                disabled={disabled}
+              />
+            )}
+          </div>
+        )}
       </div>
     );
   }

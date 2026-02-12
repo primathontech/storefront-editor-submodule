@@ -34,6 +34,7 @@ export interface SidebarProps extends BaseComponentProps {
   style?: React.CSSProperties;
   width?: string | number;
   collapsed?: boolean;
+  borderSide?: "left" | "right";
   children: React.ReactNode;
 }
 
@@ -43,6 +44,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
       className,
       width = "320px",
       collapsed = false,
+      borderSide = "right",
       children,
       style,
       ...props
@@ -60,11 +62,14 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
       };
     }, [width, collapsed]);
 
+    const borderClass = borderSide === "left" ? "border-l" : "border-r";
+
     return (
       <div
         ref={ref}
         className={cn(
-          "h-full flex flex-col overflow-hidden bg-white border-r border-gray-200",
+          "h-full flex flex-col overflow-hidden bg-white border-gray-200",
+          borderClass,
           className
         )}
         style={{ ...sidebarStyles, ...style }}
@@ -124,7 +129,7 @@ const SidebarContent = React.forwardRef<HTMLDivElement, SidebarContentProps>(
     return (
       <div
         ref={ref}
-        className={cn("flex-1 overflow-auto", className)}
+        className={cn("flex-1 overflow-auto flex flex-col min-h-0", className)}
         style={style}
         {...props}
       >

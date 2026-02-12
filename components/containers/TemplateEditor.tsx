@@ -15,6 +15,7 @@ import {
   RESPONSIVE_FRAME_STYLE,
 } from "../../stores/useEditorState";
 import BuilderToolbar from "../ui/BuilderToolbar";
+import { SettingsSidebar } from "../ui/SettingsSidebar";
 import { useDualTranslationStore } from "../../stores/dualTranslationStore";
 
 // Import widget registry setup to ensure widgets are registered
@@ -48,6 +49,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     updateRouteHandle,
     device,
     mode,
+    showSettingsDrawer,
   } = useEditorState();
 
   const [themeStyles, setThemeStyles] = useState<Record<string, any> | null>(
@@ -343,10 +345,8 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
           <BuilderToolbar
             templateName={templateMeta?.name}
             pageConfig={pageConfig}
-            translationService={translationService}
             currentLocale={language}
             supportedLanguages={templateMeta?.supportedLanguages || ["en"]}
-            routeContext={routeContext}
             onRouteHandleChange={updateRouteHandle}
             onLocaleChange={async (newLocale) => {
               setLanguage(newLocale);
@@ -409,6 +409,10 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
           </div>
         </Frame>
       </div>
+      {/* Right Settings Sidebar */}
+      {showSettingsDrawer && (
+        <SettingsSidebar translationService={translationService} />
+      )}
     </div>
   );
 };
