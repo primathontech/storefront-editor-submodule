@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
     const upstreamForm = new FormData();
     upstreamForm.append("file", file, "voice.webm");
     upstreamForm.append("model", "whisper-1");
+    // Force transcription language to English to keep behavior predictable
+    upstreamForm.append("language", "en");
 
     const response = await fetch(
       "https://api.openai.com/v1/audio/transcriptions",

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import styles from "./Dialog.module.css";
 
 interface DialogProps {
   open: boolean;
@@ -46,7 +47,7 @@ export const Dialog: React.FC<DialogProps> = ({
       onClick={handleOverlayClick}
     >
       <div
-        className={`w-full ${maxWidthClass} rounded-lg bg-editor-surface shadow-xl border border-editor-border`}
+        className={`w-full ${maxWidthClass} rounded-lg bg-editor-surface shadow-xl border border-editor-border ${styles["dialog-surface"]}`}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-editor-border">
           <div className="flex items-center gap-4 flex-1">

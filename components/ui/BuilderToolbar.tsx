@@ -32,6 +32,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useEditorState } from "../../stores/useEditorState";
 import { SectionLibraryDialog } from "./SectionLibraryDialog";
 import { availableSectionsRegistry } from "@/registries/available-sections-registry";
+import styles from "./BuilderToolbar.module.css";
 
 interface BuilderToolbarProps {
   pageConfig: any;
@@ -381,7 +382,9 @@ export default function BuilderToolbar({
                                         className="flex items-center"
                                       >
                                         <SidebarMenuButton>
-                                          <span className="text-xs font-medium">
+                                          <span
+                                            className={styles["widget-name"]}
+                                          >
                                             {widget.name || widget.type}
                                           </span>
                                           {/* Remove Widget Button */}

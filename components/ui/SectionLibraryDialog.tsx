@@ -223,7 +223,7 @@ export const SectionLibraryDialog: React.FC<SectionLibraryDialogProps> = ({
                       </div>
                     </>
                   ) : (
-                    <div className="text-xs text-gray-400 text-center py-8">
+                    <div className={styles["empty-state-text"]}>
                       Select a section on the left to see its preview.
                     </div>
                   )}

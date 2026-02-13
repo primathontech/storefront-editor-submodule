@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useDualTranslationStore } from "../../stores/dualTranslationStore";
 import { useEditorState } from "../../stores/useEditorState";
 import { useToast } from "@/ui/context/toast/ToastContext";
+import styles from "./EditorHeader2.module.css";
 
 interface EditorHeader2Props {
   theme?: any;
@@ -123,25 +124,25 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
   const MODES = ["edit", "preview"] as const;
 
   return (
-    <header className="w-full bg-editor-surface border-b border-editor-border flex items-center justify-between px-6 h-14 shadow-sm z-10">
+    <header className={styles.header}>
       {/* Left side - Navigation and Theme Info */}
-      <div className="flex items-center gap-4">
-        <span className="text-lg font-semibold text-editor-text">
+      <div className={styles["left-container"]}>
+        <span className={styles["theme-name"]}>
           Theme: {theme?.name || theme?.id}
         </span>
 
         {/* Template Dropdown */}
         {theme?.templateStructure?.length > 0 && (
-          <div className="flex items-center gap-2">
+          <div className={styles["template-container"]}>
             <label
               htmlFor="template-select"
-              className="text-sm text-editor-text-muted"
+              className={styles["template-label"]}
             >
               Template:
             </label>
             <select
               id="template-select"
-              className="px-3 py-1 border border-editor-border rounded text-sm min-w-[300px] bg-editor-surface text-editor-text"
+              className={styles["template-select"]}
               value={selectedTemplateId || ""}
               onChange={handleSelectChange}
               aria-label="Select template to edit"
@@ -164,16 +165,12 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
       </div>
 
       {/* Right side - Device and Mode Controls */}
-      <div className="flex items-center gap-6">
+      <div className={styles["right-container"]}>
         {/* Unified Save Button */}
         <button
           onClick={handleSave}
           disabled={isSaveDisabled}
-          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-            isSaveDisabled
-              ? "bg-editor-surface-muted text-editor-text-muted cursor-not-allowed"
-              : "bg-green-600 text-white hover:bg-green-700"
-          }`}
+          className={styles["save-button"]}
           title={saveButtonTitle}
         >
           {isValidating
@@ -183,15 +180,15 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
               : "Save"}
         </button>
 
-        <div className="flex gap-1">
+        <div className={styles["button-group"]}>
           {DEVICES.map((d) => (
             <button
               key={d}
-              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+              className={`${styles["device-button"]} ${
                 device === d
-                  ? "bg-editor-accent text-white"
-                  : "bg-editor-surface-muted text-editor-text-muted"
-              } cursor-pointer`}
+                  ? styles["device-button-active"]
+                  : styles["device-button-inactive"]
+              }`}
               onClick={() => setDevice(d)}
               title={`Switch to ${d.charAt(0).toUpperCase() + d.slice(1)} view`}
             >
@@ -199,15 +196,15 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
             </button>
           ))}
         </div>
-        <div className="flex gap-1">
+        <div className={styles["button-group"]}>
           {MODES.map((m) => (
             <button
               key={m}
-              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+              className={`${styles["mode-button"]} ${
                 mode === m
-                  ? "bg-green-600 text-white"
-                  : "bg-editor-surface-muted text-editor-text-muted"
-              } cursor-pointer`}
+                  ? styles["mode-button-active"]
+                  : styles["mode-button-inactive"]
+              }`}
               onClick={() => setMode(m)}
               title={`Switch to ${m.charAt(0).toUpperCase() + m.slice(1)} mode`}
             >
