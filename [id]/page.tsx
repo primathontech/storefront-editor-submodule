@@ -31,6 +31,15 @@ const TranslationEditor = dynamic(
 
 export default function UnifiedEditorPage() {
   const params = useParams();
+  const {
+    setPageConfig,
+    setPendingPageConfig,
+    setPageData,
+    setPageDataStale,
+    setSelectedSection,
+    setSelectedWidget,
+    setShowSettingsDrawer,
+  } = useEditorState.getState();
 
   const [authState, setAuthState] = useState<{
     isValid: boolean | null;
@@ -175,7 +184,19 @@ export default function UnifiedEditorPage() {
       <EditorHeader2
         theme={theme}
         selectedTemplateId={templateMeta?.id || null}
-        onTemplateChange={(templateMeta) => setTemplateMeta(templateMeta)}
+        onTemplateChange={(nextTemplateMeta) => {
+          // Reset editor-specific state before switching templates to avoid
+          // rendering the previous template with the new template's data/translations.
+          setPageConfig(null);
+          setPendingPageConfig(null);
+          setPageData(null);
+          setPageDataStale(false);
+          setSelectedSection(null);
+          setSelectedWidget(null);
+          setShowSettingsDrawer(false);
+
+          setTemplateMeta(nextTemplateMeta);
+        }}
         onSave={handleSave}
         isSaving={isSaving}
       />
