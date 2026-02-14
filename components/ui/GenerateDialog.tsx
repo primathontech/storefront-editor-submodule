@@ -1,26 +1,19 @@
 import React, { useState } from "react";
 import styles from "./GenerateDialog.module.css";
 import { SparkleIcon } from "./SectionLibraryDialog";
-import { useImageAttachment } from "./useImageAttachment";
+import {
+  useImageAttachment,
+  ImageUploadIcon,
+  ImagePreview,
+  ImageFileInput,
+  createImageValidationErrorHandler,
+} from "./useImageAttachment";
 import { PromptTextarea } from "./PromptTextarea";
+import { useToast } from "@/ui/context/toast";
 
 interface GenerateDialogProps {
   onGenerate: (intent: string, imageFile?: File | null) => void;
 }
-
-export const ImageUploadIcon: React.FC<{ className?: string }> = ({
-  className,
-}) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    className={className}
-    fill="currentColor"
-  >
-    <path d="M0 0h24v24H0V0z" fill="none" />
-    <path d="M18 20H4V6h9V4H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-9h-2v9zm-7.79-3.17l-1.96-2.36L5.5 18h11l-3.54-4.71zM20 4V1h-2v3h-3c.01.01 0 2 0 2h3v2.99c.01.01 2 0 2 0V6h3V4h-3z" />
-  </svg>
-);
 
 const ActionButton: React.FC<{
   label: string;
@@ -49,6 +42,8 @@ export const GenerateDialog: React.FC<GenerateDialogProps> = ({
   onGenerate,
 }) => {
   const [prompt, setPrompt] = useState("");
+  const { addToast } = useToast();
+
   const {
     file: imageFile,
     previewUrl: imagePreviewUrl,
@@ -56,7 +51,9 @@ export const GenerateDialog: React.FC<GenerateDialogProps> = ({
     openFilePicker,
     handleFileChange,
     clearImage,
-  } = useImageAttachment();
+  } = useImageAttachment({
+    onValidationError: createImageValidationErrorHandler(addToast),
+  });
 
   const handlePromptSend = () => {
     const trimmed = prompt.trim();
@@ -98,24 +95,15 @@ export const GenerateDialog: React.FC<GenerateDialogProps> = ({
       <div className={styles["design-area"]}>
         <div className={styles["prompt-wrapper"]}>
           {imagePreviewUrl && (
-            <div className={styles["image-preview-container"]}>
-              <div className={styles["image-preview-wrapper"]}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={imagePreviewUrl}
-                  alt={imageFile?.name || "Attached image"}
-                  className={styles["image-preview"]}
-                />
-                <button
-                  type="button"
-                  onClick={clearImage}
-                  className={styles["image-remove-button"]}
-                  aria-label="Remove attached image"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
+            <ImagePreview
+              previewUrl={imagePreviewUrl}
+              fileName={imageFile?.name}
+              onRemove={clearImage}
+              containerClassName={styles["image-preview-container"]}
+              wrapperClassName={styles["image-preview-wrapper"]}
+              imageClassName={styles["image-preview"]}
+              removeButtonClassName={styles["image-remove-button"]}
+            />
           )}
           <PromptTextarea
             value={prompt}
@@ -134,12 +122,10 @@ export const GenerateDialog: React.FC<GenerateDialogProps> = ({
           >
             <ImageUploadIcon />
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className={styles["file-input"]}
+          <ImageFileInput
+            inputRef={fileInputRef}
             onChange={handleFileChange}
+            className={styles["file-input"]}
           />
           <button
             type="button"

@@ -71,6 +71,32 @@ export class ClaudeClient implements LLMClient {
     }
   }
 
+  /**
+   * Helper method to add image to Anthropic content blocks.
+   * Handles base64 conversion and error handling.
+   */
+  private async addImageToContent(
+    content: AnthropicContentBlock[],
+    imageFile: File
+  ): Promise<void> {
+    try {
+      const { mediaType, data } = await readFileAsBase64(imageFile);
+      content.push({
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: mediaType,
+          data,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Failed to read attached image, continuing without image:",
+        error
+      );
+    }
+  }
+
   async generateResponse({
     context,
     currentHtml,
@@ -119,22 +145,7 @@ export class ClaudeClient implements LLMClient {
       }
 
       if (imageFile) {
-        try {
-          const { mediaType, data } = await readFileAsBase64(imageFile);
-          msg.content.push({
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: mediaType,
-              data,
-            },
-          });
-        } catch (error) {
-          console.error(
-            "Failed to read attached image, continuing without image:",
-            error
-          );
-        }
+        await this.addImageToContent(msg.content, imageFile);
       }
     } else {
       // No user message in context; fall back to a single synthetic user turn.
@@ -146,22 +157,7 @@ export class ClaudeClient implements LLMClient {
         },
       ];
       if (imageFile) {
-        try {
-          const { mediaType, data } = await readFileAsBase64(imageFile);
-          content.push({
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: mediaType,
-              data,
-            },
-          });
-        } catch (error) {
-          console.error(
-            "Failed to read attached image, continuing without image:",
-            error
-          );
-        }
+        await this.addImageToContent(content, imageFile);
       }
       apiMessages.push({
         role: "user",

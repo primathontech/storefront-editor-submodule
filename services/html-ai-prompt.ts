@@ -23,6 +23,20 @@ Technical constraints to follow:
 - Safety and Stability: Ensure all script tag code is wrapped inside try/catch blocks so runtime errors do not break the page.
 
 - Simplicity: Make the code simple and easy to understand, balancing best practices with readability. It is not necessary to generate all three (<style>, markup, and <script>) if one of them is not required. For example, if no custom JavaScript is needed, omit the <script> block; if Tailwind or existing styles are sufficient, omit custom <style>.
+
+- Validation Compliance: Code is validated through two stages. Both must pass.
+
+  **HTML Validation (html-validate package, recommended preset):**
+  * Buttons: Always include type attribute (type="button", "submit", or "reset").
+  * Whitespace: No trailing whitespace on lines.
+  * Tag order: Close tags in correct order (last opened, first closed).
+  * Structure: Follow HTML5 structure and nesting rules.
+
+  **JavaScript Validation (eslint-linter-browserify package, ES2020 script mode):**
+  * Syntax: Valid ECMAScript 2020 syntax only.
+  * Script mode: No ES6 import/export (use script mode, not modules).
+  * Errors: No syntax errors, undefined variables, or fatal parsing errors.
+  * Scope: Only inline <script> tags (without src) are validated; external scripts are skipped.
 `.trim();
 
 /**

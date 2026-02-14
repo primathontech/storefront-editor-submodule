@@ -8,9 +8,15 @@ import { htmlChatService } from "../../services/chat/chat-service";
 import { ChatMessage, ChatRole, Conversation } from "../../models/chat-types";
 import { EditorAPI } from "../../services/api";
 import styles from "./HtmlInput.module.css";
-import { ImageUploadIcon } from "./GenerateDialog";
-import { useImageAttachment } from "./useImageAttachment";
+import {
+  useImageAttachment,
+  ImageUploadIcon,
+  ImagePreview,
+  ImageFileInput,
+  createImageValidationErrorHandler,
+} from "./useImageAttachment";
 import { SparkleIcon } from "./SectionLibraryDialog";
+import { useToast } from "@/ui/context/toast";
 
 // Lazy load the entire editor component with all heavy dependencies in one chunk
 const HtmlEditorWithValidation = dynamic(
@@ -47,6 +53,8 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
   const [isSending, setIsSending] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const { addToast } = useToast();
+
   const {
     file: chatImageFile,
     previewUrl: chatImagePreviewUrl,
@@ -55,7 +63,9 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
     handleFileChange,
     clearImage: clearChatImage,
     setFile: setChatImageFile,
-  } = useImageAttachment();
+  } = useImageAttachment({
+    onValidationError: createImageValidationErrorHandler(addToast),
+  });
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const processedPendingPromptRef = useRef<string | null>(null);
@@ -368,23 +378,15 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
             <div className={styles["input-container"]}>
               <div className={styles["textarea-wrapper"]}>
                 {chatImagePreviewUrl && (
-                  <div className={styles["image-preview-container"]}>
-                    <div className={styles["image-preview-wrapper"]}>
-                      <img
-                        src={chatImagePreviewUrl}
-                        alt={chatImageFile?.name || "Attached image"}
-                        className={styles["image-preview"]}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setChatImageFile(null)}
-                        className={styles["image-remove-button"]}
-                        aria-label="Remove attached image"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
+                  <ImagePreview
+                    previewUrl={chatImagePreviewUrl}
+                    fileName={chatImageFile?.name}
+                    onRemove={() => setChatImageFile(null)}
+                    containerClassName={styles["image-preview-container"]}
+                    wrapperClassName={styles["image-preview-wrapper"]}
+                    imageClassName={styles["image-preview"]}
+                    removeButtonClassName={styles["image-remove-button"]}
+                  />
                 )}
                 <textarea
                   value={chatInput}
@@ -416,13 +418,11 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
               >
                 <ImageUploadIcon />
               </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className={styles["file-input"]}
-                disabled={isSending || disabled}
+              <ImageFileInput
+                inputRef={fileInputRef}
                 onChange={handleFileChange}
+                disabled={isSending || disabled}
+                className={styles["file-input"]}
               />
               <button
                 type="button"
