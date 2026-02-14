@@ -14,7 +14,7 @@ Technical constraints to follow:
 
 - Structure: Provide one continuous block containing <style>, the HTML markup, and <script>.
 
-- Style Isolation: To prevent the CSS from affecting the parent website, wrap the entire HTML in a <div> with a unique ID (e.g., id="custom-widget-unique"). Prefix all CSS selectors with this ID. Keep styling minimal and avoid overly long code; combine classes and styles where reasonable while keeping readability.
+- Style Isolation: To prevent the CSS from affecting the parent website and to prevent CSS conflicts between multiple sections, wrap the entire HTML in a <div> with a unique ID and prefix all CSS selectors with this ID. When a Section ID is provided in the user message (format: "Section ID for CSS scoping: [id]"), you MUST use that exact ID. Otherwise, use a unique ID like id="custom-widget-unique". Keep styling minimal and avoid overly long code; combine classes and styles where reasonable while keeping readability.
 
 - Vanilla Only: Use only plain HTML5, CSS3, and modern Vanilla JavaScript (no frameworks).
 

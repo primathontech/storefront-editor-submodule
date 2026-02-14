@@ -29,6 +29,7 @@ export interface LLMClientParams {
   context: ChatMessage[];
   currentHtml: string;
   imageFile?: File | null;
+  sectionId?: string;
 }
 
 export interface LLMClient {
@@ -101,6 +102,7 @@ export class ClaudeClient implements LLMClient {
     context,
     currentHtml,
     imageFile,
+    sectionId,
   }: LLMClientParams): Promise<{ assistant: ChatMessage; html: string }> {
     if (!this.model) {
       throw new Error("AI model is not configured");
@@ -109,6 +111,10 @@ export class ClaudeClient implements LLMClient {
     const trimmedHtml = (currentHtml || "").trim();
     const currentCodeContext = trimmedHtml
       ? `\n\nCurrent code in editor:\n\`\`\`html\n${trimmedHtml}\n\`\`\``
+      : "";
+
+    const sectionIdContext = sectionId
+      ? `\n\nSection ID for CSS scoping: "${sectionId}"\nUse this exact ID for the wrapper div and prefix ALL CSS selectors with #${sectionId}.`
       : "";
 
     // Map our internal ChatMessage history to Anthropic messages.
@@ -138,7 +144,7 @@ export class ClaudeClient implements LLMClient {
       const original =
         firstBlock && firstBlock.type === "text" ? firstBlock.text : "";
       const userPrompt = original.trim();
-      const userText = `Goal: Create a standalone, embeddable HTML snippet based on this input (which might include images for reference as well): **${userPrompt}**${currentCodeContext}`;
+      const userText = `Goal: Create a standalone, embeddable HTML snippet based on this input (which might include images for reference as well): **${userPrompt}**${currentCodeContext}${sectionIdContext}`;
 
       if (firstBlock && firstBlock.type === "text") {
         firstBlock.text = userText;
@@ -149,7 +155,7 @@ export class ClaudeClient implements LLMClient {
       }
     } else {
       // No user message in context; fall back to a single synthetic user turn.
-      const fallbackText = `Goal: Create a standalone, embeddable HTML snippet.${currentCodeContext}`;
+      const fallbackText = `Goal: Create a standalone, embeddable HTML snippet.${currentCodeContext}${sectionIdContext}`;
       const content: AnthropicContentBlock[] = [
         {
           type: "text" as const,

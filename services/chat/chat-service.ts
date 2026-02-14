@@ -94,10 +94,16 @@ export class ChatService {
       messages: [...conversation.messages, userMessage],
     };
 
+    // Extract sectionId from conversationId (format: "custom-html:${sectionId}")
+    const sectionId = conversationId.startsWith("custom-html:")
+      ? conversationId.replace("custom-html:", "")
+      : undefined;
+
     const { assistant, html } = await this.llmClient.generateResponse({
       context: conversation.messages,
       currentHtml,
       imageFile,
+      sectionId,
     });
 
     const updatedConversation: Conversation = {
