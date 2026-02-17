@@ -2,6 +2,14 @@ import React, { useState } from "react";
 import { useDualTranslationStore } from "../../stores/dualTranslationStore";
 import { useEditorState } from "../../stores/useEditorState";
 import { useToast } from "@/ui/context/toast/ToastContext";
+import { Button, IconButton } from "./design-system";
+import { PreviewIcon } from "./icons/PreviewIcon";
+import { EditIcon } from "./icons/EditIcon";
+import { HeaderHomeIcon } from "./icons/HeaderHomeIcon";
+import { HeaderMonitorIcon } from "./icons/HeaderMonitorIcon";
+import { HeaderTabletIcon } from "./icons/HeaderTabletIcon";
+import { HeaderMobileIcon } from "./icons/HeaderMobileIcon";
+import { HeaderStackedIcon } from "./icons/HeaderStackedIcon";
 import styles from "./EditorHeader2.module.css";
 
 interface EditorHeader2Props {
@@ -120,16 +128,25 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
       ? "Make some changes before saving"
       : "Save changes";
 
-  const DEVICES = ["desktop", "tablet", "mobile", "fullscreen"] as const;
-  const MODES = ["edit", "preview"] as const;
-
+  const DEVICES = [
+    { id: "desktop", label: "Desktop", Icon: HeaderMonitorIcon },
+    { id: "tablet", label: "Tablet", Icon: HeaderTabletIcon },
+    { id: "mobile", label: "Mobile", Icon: HeaderMobileIcon },
+    { id: "fullscreen", label: "Fullscreen", Icon: HeaderStackedIcon },
+  ] as const;
   return (
     <header className={styles.header}>
-      {/* Left side - Navigation and Theme Info */}
+      {/* Left side - Home icon + Theme name */}
       <div className={styles["left-container"]}>
-        <span className={styles["theme-name"]}>
-          Theme: {theme?.name || theme?.id}
-        </span>
+        <IconButton
+          icon={<HeaderHomeIcon />}
+          size="md"
+          variant="ghost"
+          shape="square"
+          aria-label="Back to themes"
+          title="Back to themes"
+        />
+        <span className={styles["theme-name"]}>{theme?.name || theme?.id}</span>
 
         {/* Template Dropdown */}
         {theme?.templateStructure?.length > 0 && (
@@ -164,53 +181,58 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
         )}
       </div>
 
-      {/* Right side - Device and Mode Controls */}
-      <div className={styles["right-container"]}>
-        {/* Unified Save Button */}
-        <button
-          onClick={handleSave}
-          disabled={isSaveDisabled}
-          className={styles["save-button"]}
-          title={saveButtonTitle}
-        >
-          {isValidating
-            ? "Validating..."
-            : isSaving || isTranslationSaving
-              ? "Saving..."
-              : "Save"}
-        </button>
-
-        <div className={styles["button-group"]}>
-          {DEVICES.map((d) => (
-            <button
-              key={d}
+      {/* Center - Device Controls */}
+      <div className={styles["center-container"]}>
+        <div className={styles["device-group"]}>
+          {DEVICES.map(({ id, label, Icon }) => (
+            <IconButton
+              key={id}
+              icon={<Icon />}
+              size="md"
+              variant="ghost"
+              shape="square"
+              onClick={() => setDevice(id as typeof device)}
+              aria-pressed={device === id}
+              aria-label={`Switch to ${label} view`}
+              title={`Switch to ${label} view`}
               className={`${styles["device-button"]} ${
-                device === d
+                device === id
                   ? styles["device-button-active"]
                   : styles["device-button-inactive"]
               }`}
-              onClick={() => setDevice(d)}
-              title={`Switch to ${d.charAt(0).toUpperCase() + d.slice(1)} view`}
-            >
-              {d.charAt(0).toUpperCase() + d.slice(1)}
-            </button>
+            />
           ))}
         </div>
-        <div className={styles["button-group"]}>
-          {MODES.map((m) => (
-            <button
-              key={m}
-              className={`${styles["mode-button"]} ${
-                mode === m
-                  ? styles["mode-button-active"]
-                  : styles["mode-button-inactive"]
-              }`}
-              onClick={() => setMode(m)}
-              title={`Switch to ${m.charAt(0).toUpperCase() + m.slice(1)} mode`}
-            >
-              {m.charAt(0).toUpperCase() + m.slice(1)}
-            </button>
-          ))}
+      </div>
+
+      {/* Right side - Preview/Edit toggle and Save Button */}
+      <div className={styles["right-container"]}>
+        <div className={styles["action-buttons-container"]}>
+          <Button
+            variant="secondary"
+            size="md"
+            leftIcon={mode === "preview" ? <EditIcon /> : <PreviewIcon />}
+            onClick={() => setMode(mode === "preview" ? "edit" : "preview")}
+            style={{ width: "122px" }}
+          >
+            {mode === "preview" ? "Edit" : "Preview"}
+          </Button>
+
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleSave}
+            disabled={isSaveDisabled}
+            loading={isValidating || isSaving || isTranslationSaving}
+            title={saveButtonTitle}
+            style={{ width: "100px" }}
+          >
+            {isValidating
+              ? "Validating..."
+              : isSaving || isTranslationSaving
+                ? "Saving..."
+                : "Save"}
+          </Button>
         </div>
       </div>
     </header>
