@@ -32,15 +32,6 @@ const TranslationEditor = dynamic(
 
 export default function UnifiedEditorPage() {
   const params = useParams();
-  const {
-    setPageConfig,
-    setPendingPageConfig,
-    setPageData,
-    setPageDataStale,
-    setSelectedSection,
-    setSelectedWidget,
-    setShowSettingsDrawer,
-  } = useEditorState.getState();
 
   const [authState, setAuthState] = useState<{
     isValid: boolean | null;
@@ -180,32 +171,26 @@ export default function UnifiedEditorPage() {
     }
   };
 
+  const handleTemplateChange = (nextTemplateMeta: any) => {
+    // Reset logic is now handled by resetEditorState in the store
+    // This callback only needs to update the local templateMeta state
+    setTemplateMeta(nextTemplateMeta);
+  };
+
   return (
     <div className="flex flex-col h-screen">
-      <EditorHeader2
-        theme={theme}
-        selectedTemplateId={templateMeta?.id || null}
-        onTemplateChange={(nextTemplateMeta) => {
-          // Reset editor-specific state before switching templates to avoid
-          // rendering the previous template with the new template's data/translations.
-          setPageConfig(null);
-          setPendingPageConfig(null);
-          setPageData(null);
-          setPageDataStale(false);
-          setSelectedSection(null);
-          setSelectedWidget(null);
-          setShowSettingsDrawer(false);
-
-          setTemplateMeta(nextTemplateMeta);
-        }}
-        onSave={handleSave}
-        isSaving={isSaving}
-      />
+      <EditorHeader2 theme={theme} onSave={handleSave} isSaving={isSaving} />
 
       {templateMeta ? (
         <RightSidebarWidthProvider>
           {templateMeta.isDynamic ? (
-            <TemplateEditor templateMeta={templateMeta} themeId={themeId} />
+            <TemplateEditor
+              templateMeta={templateMeta}
+              themeId={themeId}
+              theme={theme}
+              selectedTemplateId={templateMeta?.id || null}
+              onTemplateChange={handleTemplateChange}
+            />
           ) : (
             <TranslationEditor templateMeta={templateMeta} themeId={themeId} />
           )}

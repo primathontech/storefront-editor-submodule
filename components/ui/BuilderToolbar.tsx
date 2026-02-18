@@ -32,6 +32,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useEditorState } from "../../stores/useEditorState";
 import { SectionLibraryDialog } from "./SectionLibraryDialog";
 import { availableSectionsRegistry } from "@/registries/available-sections-registry";
+import { TemplateSwitchDropdown } from "./TemplateSwitchDropdown";
 import styles from "./BuilderToolbar.module.css";
 
 interface BuilderToolbarProps {
@@ -41,6 +42,9 @@ interface BuilderToolbarProps {
   onLocaleChange: (locale: string) => void;
   supportedLanguages?: string[];
   onRouteHandleChange: (handle: string) => void;
+  theme?: any;
+  selectedTemplateId?: string | null;
+  onTemplateChange?: (templateMeta: any) => void;
 }
 
 export default function BuilderToolbar({
@@ -50,11 +54,12 @@ export default function BuilderToolbar({
   onLocaleChange,
   supportedLanguages = ["en"], // Default to English if not provided
   onRouteHandleChange,
+  theme,
+  selectedTemplateId,
+  onTemplateChange,
 }: BuilderToolbarProps) {
   const {
-    selectedSectionId,
     selectedWidgetId,
-    expandedSections,
     setSelectedSection,
     setSelectedWidget,
     setShowSettingsDrawer,
@@ -221,6 +226,13 @@ export default function BuilderToolbar({
           className="p-4"
         />
 
+        {/* Template Dropdown */}
+        <TemplateSwitchDropdown
+          theme={theme}
+          selectedTemplateId={selectedTemplateId}
+          onTemplateChange={onTemplateChange}
+        />
+
         {/* Route Handle Input */}
         {routeHandleKey && (
           <div className="px-4 pb-2">
@@ -295,8 +307,6 @@ export default function BuilderToolbar({
                                 key={section.id}
                                 section={section}
                               >
-                                {/* Section Header */}
-                                {/* Remove Section Button */}
                                 {(() => {
                                   const isInLibrary = isSectionInLibrary(
                                     section.id
@@ -387,32 +397,6 @@ export default function BuilderToolbar({
                                           >
                                             {widget.name || widget.type}
                                           </span>
-                                          {/* Remove Widget Button */}
-                                          {/* <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            removeWidget(
-                                              section.id,
-                                              widget.id
-                                            );
-                                          }}
-                                          className="ml-2 text-red-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-100"
-                                          title="Remove widget"
-                                        >
-                                          <svg
-                                            className="w-4 h-4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                          >
-                                            <path
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                              strokeWidth={2}
-                                              d="M6 18L18 6M6 6l12 12"
-                                            />
-                                          </svg>
-                                        </button> */}
                                         </SidebarMenuButton>
                                       </SidebarMenuItem>
                                     ))}

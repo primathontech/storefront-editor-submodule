@@ -14,8 +14,6 @@ import styles from "./EditorHeader2.module.css";
 
 interface EditorHeader2Props {
   theme?: any;
-  selectedTemplateId?: string | null;
-  onTemplateChange?: (templateMeta: any) => void;
   onSave?: () => void;
   isSaving?: boolean;
 }
@@ -28,8 +26,6 @@ const isEditorChangesEnabled = () => {
 
 const EditorHeader2: React.FC<EditorHeader2Props> = ({
   theme,
-  selectedTemplateId,
-  onTemplateChange,
   onSave,
   isSaving = false,
 }) => {
@@ -44,26 +40,10 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
   const [isValidating, setIsValidating] = useState(false);
   const { addToast } = useToast();
 
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedTemplateId = e.target.value;
-    if (!selectedTemplateId || !theme || !onTemplateChange) {
-      return;
-    }
-
-    for (const group of theme.templateStructure) {
-      const foundTemplate = group.templates?.find(
-        (t: any) => t.id === selectedTemplateId
-      );
-      if (foundTemplate) {
-        onTemplateChange(foundTemplate);
-        break;
-      }
-    }
-  };
-
-  const selectedTemplate = theme?.templateStructure
-    ?.flatMap((group: any) => group.templates || [])
-    .find((template: any) => template.id === selectedTemplateId);
+  const selectedTemplate =
+    theme?.templateStructure
+      ?.flatMap((group: any) => group.templates || [])
+      .find((template: any) => template.isHome === true) || null;
 
   const handleSave = async () => {
     // Validate all HTML before saving
@@ -96,10 +76,10 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
         // Handle template save
         onSave?.();
         // For dynamic templates, save to template-specific file
-        await saveTranslations(theme?.id, selectedTemplateId!);
+        await saveTranslations(theme?.id, selectedTemplate?.id);
       } else {
         // Handle translation save
-        await saveTranslations(theme?.id, selectedTemplateId!);
+        await saveTranslations(theme?.id, selectedTemplate?.id);
       }
     } catch (error) {
       console.error("Validation error:", error);
@@ -147,38 +127,6 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
           title="Back to themes"
         />
         <span className={styles["theme-name"]}>{theme?.name || theme?.id}</span>
-
-        {/* Template Dropdown */}
-        {theme?.templateStructure?.length > 0 && (
-          <div className={styles["template-container"]}>
-            <label
-              htmlFor="template-select"
-              className={styles["template-label"]}
-            >
-              Template:
-            </label>
-            <select
-              id="template-select"
-              className={styles["template-select"]}
-              value={selectedTemplateId || ""}
-              onChange={handleSelectChange}
-              aria-label="Select template to edit"
-            >
-              <option value="" disabled>
-                Select template...
-              </option>
-              {theme.templateStructure.map((group: any) => (
-                <optgroup key={group.id} label={`📁 ${group.name}`}>
-                  {group.templates?.map((template: any) => (
-                    <option key={template.id} value={template.id}>
-                      📄 {template.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
 
       {/* Center - Device Controls */}

@@ -92,6 +92,7 @@ export interface EditorState {
   ) => void;
   clearHtmlValidationErrors: (sectionId: string) => void;
   validateAllHtml: () => Promise<void>;
+  resetEditorState: () => void; // Reset editor state when switching templates
 
   // Section Actions
   addSection: (
@@ -257,6 +258,20 @@ export const useEditorState = create<EditorState>()(
           const { [sectionId]: removed, ...remaining } =
             state.htmlValidationErrors;
           return { htmlValidationErrors: remaining };
+        });
+      },
+
+      resetEditorState: () => {
+        // Reset all editor-specific state when switching templates
+        // This prevents rendering the previous template with the new template's data/translations
+        set({
+          pageConfig: null,
+          pendingPageConfig: null,
+          pageData: null,
+          pageDataStale: false,
+          selectedSectionId: null,
+          selectedWidgetId: null,
+          showSettingsDrawer: false,
         });
       },
 

@@ -24,11 +24,17 @@ import "@/core/widget-registry-setup";
 interface TemplateEditorProps {
   templateMeta: any;
   themeId?: string;
+  theme?: any;
+  selectedTemplateId?: string | null;
+  onTemplateChange?: (templateMeta: any) => void;
 }
 
 const TemplateEditor: React.FC<TemplateEditorProps> = ({
   templateMeta,
   themeId,
+  theme,
+  selectedTemplateId,
+  onTemplateChange,
 }) => {
   const {
     pageConfig,
@@ -354,6 +360,9 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
                 await getTranslations(themeId, templateMeta.id, newLocale);
               }
             }}
+            theme={theme}
+            selectedTemplateId={selectedTemplateId || templateMeta?.id || null}
+            onTemplateChange={onTemplateChange}
           />
         </div>
       )}
