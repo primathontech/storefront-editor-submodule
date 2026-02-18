@@ -126,6 +126,7 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
           aria-label="Back to themes"
           title="Back to themes"
         />
+        <div className={styles.divider} />
         <span className={styles["theme-name"]}>{theme?.name || theme?.id}</span>
       </div>
 

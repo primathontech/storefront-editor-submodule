@@ -14,8 +14,15 @@
 .left-container {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex: 0 0 auto;
+}
+
+.divider {
+  width: 0.5px;
+  height: 40px;
+  background: #dfdfdf;
+  flex-shrink: 0;
 }
 
 .center-container {
