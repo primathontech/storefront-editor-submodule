@@ -349,7 +349,6 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
       {device !== "fullscreen" && (
         <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0">
           <BuilderToolbar
-            templateName={templateMeta?.name}
             pageConfig={pageConfig}
             currentLocale={language}
             supportedLanguages={templateMeta?.supportedLanguages || ["en"]}

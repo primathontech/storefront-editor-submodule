@@ -6,7 +6,6 @@ import { Input } from "./Input";
 import { SimpleSelect } from "./SimpleSelect";
 import {
   Sidebar,
-  SidebarHeader,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
@@ -37,7 +36,6 @@ import styles from "./BuilderToolbar.module.css";
 
 interface BuilderToolbarProps {
   pageConfig: any;
-  templateName?: string;
   currentLocale: string;
   onLocaleChange: (locale: string) => void;
   supportedLanguages?: string[];
@@ -49,7 +47,6 @@ interface BuilderToolbarProps {
 
 export default function BuilderToolbar({
   pageConfig,
-  templateName,
   currentLocale,
   onLocaleChange,
   supportedLanguages = ["en"], // Default to English if not provided
@@ -218,14 +215,6 @@ export default function BuilderToolbar({
   return (
     <div className="h-full flex flex-col relative">
       <Sidebar>
-        <SidebarHeader
-          title={templateName || "Untitled Page"}
-          subtitle={`${pageConfig.sections.length} section${
-            pageConfig.sections.length !== 1 ? "s" : ""
-          }`}
-          className="p-4"
-        />
-
         {/* Template Dropdown */}
         <TemplateSwitchDropdown
           theme={theme}
