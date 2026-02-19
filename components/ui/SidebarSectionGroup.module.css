@@ -1,0 +1,104 @@
+.group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid #dfdfdf;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.dragHandle {
+  display: grid;
+  grid-template-columns: repeat(2, 6px);
+  gap: 6px;
+  margin-top: 6px;
+  cursor: grab;
+}
+
+.sectionContent {
+  flex: 1;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(
+    --font-inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif
+  );
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 12px;
+  letter-spacing: 0;
+  vertical-align: middle;
+  color: #555555;
+}
+
+.iconButton {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.closeButton:hover {
+  color: #374151;
+}
+
+.content {
+  margin-top: 4px;
+}
+
+.addSectionButton {
+  padding: 0;
+  gap: 4px;
+  min-height: auto;
+  font-family: var(
+    --font-inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif
+  );
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 20px;
+  letter-spacing: 0;
+  vertical-align: middle;
+  color: #1d4a88;
+}

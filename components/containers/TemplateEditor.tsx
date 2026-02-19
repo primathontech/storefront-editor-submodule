@@ -347,23 +347,21 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
   return (
     <div className="flex flex-1 min-h-0">
       {device !== "fullscreen" && (
-        <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0">
-          <BuilderToolbar
-            pageConfig={pageConfig}
-            currentLocale={language}
-            supportedLanguages={templateMeta?.supportedLanguages || ["en"]}
-            onRouteHandleChange={updateRouteHandle}
-            onLocaleChange={async (newLocale) => {
-              setLanguage(newLocale);
-              if (templateMeta?.id && themeId) {
-                await getTranslations(themeId, templateMeta.id, newLocale);
-              }
-            }}
-            theme={theme}
-            selectedTemplateId={selectedTemplateId || templateMeta?.id || null}
-            onTemplateChange={onTemplateChange}
-          />
-        </div>
+        <BuilderToolbar
+          pageConfig={pageConfig}
+          currentLocale={language}
+          supportedLanguages={templateMeta?.supportedLanguages || ["en"]}
+          onRouteHandleChange={updateRouteHandle}
+          onLocaleChange={async (newLocale) => {
+            setLanguage(newLocale);
+            if (templateMeta?.id && themeId) {
+              await getTranslations(themeId, templateMeta.id, newLocale);
+            }
+          }}
+          theme={theme}
+          selectedTemplateId={selectedTemplateId || templateMeta?.id || null}
+          onTemplateChange={onTemplateChange}
+        />
       )}
       <div className="flex-1 overflow-auto p-4 flex justify-center">
         <Frame

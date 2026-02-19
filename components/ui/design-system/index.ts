@@ -13,3 +13,15 @@ export type { IconButtonProps } from "./IconButton/IconButton";
 
 export { Badge } from "./Badge/Badge";
 export type { BadgeProps } from "./Badge/Badge";
+
+export { Dropdown } from "./Dropdown/Dropdown";
+export type {
+  DropdownProps,
+  DropdownOption,
+  DropdownOptionGroup,
+} from "./Dropdown/Dropdown";
+
+export {
+  Sidebar as DesignSidebar,
+  SidebarHeader as DesignSidebarHeader,
+} from "./Sidebar/Sidebar";

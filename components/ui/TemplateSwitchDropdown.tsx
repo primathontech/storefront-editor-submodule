@@ -1,75 +1,75 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useEditorState } from "../../stores/useEditorState";
-import styles from "./TemplateSwitchDropdown.module.css";
+import { Dropdown, type DropdownOptionGroup } from "./design-system";
 
 interface TemplateSwitchDropdownProps {
   theme?: any;
   selectedTemplateId?: string | null;
   onTemplateChange?: (templateMeta: any) => void;
-  className?: string;
 }
 
 export const TemplateSwitchDropdown: React.FC<TemplateSwitchDropdownProps> = ({
   theme,
   selectedTemplateId,
   onTemplateChange,
-  className = "",
 }) => {
   const { resetEditorState } = useEditorState();
 
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const nextTemplateId = e.target.value;
-    if (!nextTemplateId || !theme) {
-      return;
+  // Convert theme structure to dropdown option groups
+  const optionGroups: DropdownOptionGroup[] = useMemo(() => {
+    if (!theme?.templateStructure?.length) {
+      return [];
     }
 
-    // Find the template in the theme structure
+    return theme.templateStructure.map((group: any) => ({
+      label: group.name,
+      options:
+        group.templates?.map((template: any) => ({
+          value: template.id,
+          label: template.name,
+        })) || [],
+    }));
+  }, [theme]);
+
+  // Helper to find template by ID
+  const findTemplate = (templateId: string) => {
+    if (!theme?.templateStructure) return null;
+
     for (const group of theme.templateStructure) {
-      const foundTemplate = group.templates?.find(
-        (t: any) => t.id === nextTemplateId
-      );
-      if (foundTemplate) {
-        // Reset editor state before switching templates
-        resetEditorState();
-        // Notify parent to update templateMeta
-        onTemplateChange?.(foundTemplate);
-        break;
-      }
+      const found = group.templates?.find((t: any) => t.id === templateId);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextTemplateId = e.target.value;
+    if (!nextTemplateId) return;
+
+    const foundTemplate = findTemplate(nextTemplateId);
+    if (foundTemplate) {
+      resetEditorState();
+      onTemplateChange?.(foundTemplate);
     }
   };
 
-  // Don't render if no theme structure available
-  if (!theme?.templateStructure?.length) {
+  if (!theme?.templateStructure?.length || optionGroups.length === 0) {
     return null;
   }
 
   return (
-    <div className={`${styles.container} ${className}`}>
-      <label htmlFor="template-select" className={styles.label}>
-        Template
-      </label>
-      <select
-        id="template-select"
-        className={styles.select}
-        value={selectedTemplateId || ""}
-        onChange={handleSelectChange}
-        aria-label="Select template to edit"
-      >
-        <option value="" disabled>
-          Select template...
-        </option>
-        {theme.templateStructure.map((group: any) => (
-          <optgroup key={group.id} label={group.name}>
-            {group.templates?.map((template: any) => (
-              <option key={template.id} value={template.id}>
-                {template.name}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
-    </div>
+    <Dropdown
+      id="template-select"
+      variant="outline"
+      size="sm"
+      value={selectedTemplateId || ""}
+      onChange={handleSelectChange}
+      groups={optionGroups}
+      aria-label="Select template to edit"
+      fullWidth
+      showChevron
+    />
   );
 };

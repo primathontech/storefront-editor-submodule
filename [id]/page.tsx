@@ -80,7 +80,7 @@ export default function UnifiedEditorPage() {
   // Show loading while initializing
   if (authState.isValid === null) {
     return (
-      <div className="flex flex-col h-screen items-center justify-center bg-gray-50">
+      <div className="flex flex-col h-screen items-center justify-center bg-[#F8F8F8]">
         <div className="flex items-end gap-2">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mb-4"></div>
           <h3 className="text-xl font-semibold text-gray-700 mb-2">
@@ -97,7 +97,7 @@ export default function UnifiedEditorPage() {
   // Show error if validation failed
   if (!authState.isValid) {
     return (
-      <div className="flex flex-col h-screen items-center justify-center bg-gray-50">
+      <div className="flex flex-col h-screen items-center justify-center bg-[#F8F8F8]">
         <div className="text-center">
           <div className="text-gray-400 text-6xl mb-4">❌</div>
           <h3 className="text-xl font-semibold text-gray-700 mb-2">
@@ -178,7 +178,7 @@ export default function UnifiedEditorPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-[#F8F8F8]">
       <EditorHeader2 theme={theme} onSave={handleSave} isSaving={isSaving} />
 
       {templateMeta ? (
@@ -196,7 +196,7 @@ export default function UnifiedEditorPage() {
           )}
         </RightSidebarWidthProvider>
       ) : (
-        <div className="flex-1 flex items-center justify-center bg-gray-50">
+        <div className="flex-1 flex items-center justify-center bg-[#F8F8F8]">
           <div className="text-center">
             <div className="text-gray-400 text-6xl mb-4">📄</div>
             <h3 className="text-xl font-semibold text-gray-700 mb-2">
