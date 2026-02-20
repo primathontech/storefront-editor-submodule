@@ -1,25 +1,26 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { WidgetInjector } from "@/lib/page-builder/core/widget-injector";
+import { Locale } from "@/lib/i18n/config";
+import { TranslationService } from "@/lib/i18n/translation-service";
 import { LayoutRenderer } from "@/lib/page-builder/core/layout-renderer";
 import { StyleProcessor } from "@/lib/page-builder/core/style-processor";
-import { FileSystemThemeLoader } from "@/theme-loader";
+import { WidgetInjector } from "@/lib/page-builder/core/widget-injector";
 import { createThemeRegistry } from "@/lib/theme/registroy-factor";
+import { FileSystemThemeLoader } from "@/theme-loader";
 import { SectionWrapper } from "@/ui/layout/SectionWrapper";
-import { TranslationService } from "@/lib/i18n/translation-service";
-import { Locale } from "@/lib/i18n/config";
-import { translatePageConfig } from "../../utils/page-config-translator";
-import { api } from "../../services/api";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Frame from "react-frame-component";
+import { api } from "../../services/api";
+import { useDualTranslationStore } from "../../stores/dualTranslationStore";
 import {
-  useEditorState,
   RESPONSIVE_FRAME_STYLE,
+  useEditorState,
 } from "../../stores/useEditorState";
+import { translatePageConfig } from "../../utils/page-config-translator";
 import BuilderToolbar from "../ui/BuilderToolbar";
 import { SettingsSidebar } from "../ui/SettingsSidebar";
-import { useDualTranslationStore } from "../../stores/dualTranslationStore";
 
 // Import widget registry setup to ensure widgets are registered
 import "@/core/widget-registry-setup";
+import { PreviewBreakpointProvider } from "@/lib/hooks/previewBreakpointContext";
 
 interface TemplateEditorProps {
   templateMeta: any;
@@ -376,37 +377,39 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
             </html>`}
           mountTarget="#mountHere"
         >
-          <div id="website-canvas">
-            {isLoadingData && pageData && (
-              <>
-                <style>{`
+          <PreviewBreakpointProvider breakpoint={breakpoint}>
+            <div id="website-canvas">
+              {isLoadingData && pageData && (
+                <>
+                  <style>{`
                   @keyframes editor-progress-indeterminate {
                     0% { transform: translateX(-100%); }
                     50% { transform: translateX(0%); }
                     100% { transform: translateX(100%); }
                   }
                 `}</style>
-                <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-2">
-                  <div
-                    className="h-full w-1/3 bg-gradient-to-r from-blue-500 via-sky-400 to-blue-600"
-                    style={{
-                      animation:
-                        "editor-progress-indeterminate 1.2s ease-in-out infinite",
-                    }}
-                  />
+                  <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mb-2">
+                    <div
+                      className="h-full w-1/3 bg-gradient-to-r from-blue-500 via-sky-400 to-blue-600"
+                      style={{
+                        animation:
+                          "editor-progress-indeterminate 1.2s ease-in-out infinite",
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+              {pageData ? (
+                renderedLayout
+              ) : (
+                <div className="flex items-center justify-center h-64">
+                  <div className="text-gray-500">
+                    {isLoadingData ? "Loading data..." : "Loading preview..."}
+                  </div>
                 </div>
-              </>
-            )}
-            {pageData ? (
-              renderedLayout
-            ) : (
-              <div className="flex items-center justify-center h-64">
-                <div className="text-gray-500">
-                  {isLoadingData ? "Loading data..." : "Loading preview..."}
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </PreviewBreakpointProvider>
         </Frame>
       </div>
       {/* Right Settings Sidebar */}
