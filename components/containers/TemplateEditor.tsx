@@ -25,17 +25,11 @@ import { PreviewBreakpointProvider } from "@/lib/hooks/previewBreakpointContext"
 interface TemplateEditorProps {
   templateMeta: any;
   themeId?: string;
-  theme?: any;
-  selectedTemplateId?: string | null;
-  onTemplateChange?: (templateMeta: any) => void;
 }
 
 const TemplateEditor: React.FC<TemplateEditorProps> = ({
   templateMeta,
   themeId,
-  theme,
-  selectedTemplateId,
-  onTemplateChange,
 }) => {
   const {
     pageConfig,
@@ -176,22 +170,27 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
   useEffect(() => {
     const refetchData = async () => {
       const configForFetch = pendingPageConfig || pageConfig;
-      if (!configForFetch || !themeId || !routeContext || !pageDataStale)
+      if (!configForFetch || !themeId || !routeContext || !pageDataStale) {
         return;
+      }
 
-      let isCancelled = false;
+      const isCancelled = false;
       setIsLoadingData(true);
 
       try {
         const merchantNameFromAPI = await api.editor.getMerchantName();
-        if (isCancelled) return;
+        if (isCancelled) {
+          return;
+        }
 
         const realData = await api.editor.fetchEditorData({
           pageConfig: configForFetch,
           routeContext,
           merchantName: merchantNameFromAPI,
         });
-        if (isCancelled) return;
+        if (isCancelled) {
+          return;
+        }
         setPageData(realData);
         if (pendingPageConfig) {
           setPageConfig(pendingPageConfig);

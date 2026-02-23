@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { EditorContentShimmer } from "../components/ui/EditorContentShimmer";
+import { EditorHeaderShimmer } from "../components/ui/EditorHeaderShimmer";
+import { RightSidebarWidthProvider } from "../context/RightSidebarWidthContext";
 import { api } from "../services/api";
 import { useEditorState } from "../stores/useEditorState";
-import { EditorHeaderShimmer } from "../components/ui/EditorHeaderShimmer";
-import { EditorContentShimmer } from "../components/ui/EditorContentShimmer";
-import { RightSidebarWidthProvider } from "../context/RightSidebarWidthContext";
 
 const EditorHeader2 = dynamic(() => import("../components/ui/EditorHeader2"), {
   ssr: false,
@@ -190,13 +190,7 @@ export default function UnifiedEditorPage() {
       {templateMeta ? (
         <RightSidebarWidthProvider>
           {templateMeta.isDynamic ? (
-            <TemplateEditor
-              templateMeta={templateMeta}
-              themeId={themeId}
-              theme={theme}
-              selectedTemplateId={templateMeta?.id || null}
-              onTemplateChange={handleTemplateChange}
-            />
+            <TemplateEditor templateMeta={templateMeta} themeId={themeId} />
           ) : (
             <TranslationEditor templateMeta={templateMeta} themeId={themeId} />
           )}
