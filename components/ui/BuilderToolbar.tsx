@@ -3,12 +3,13 @@
 
 import { useEffect, useState } from "react";
 import { Input } from "./Input";
-import { SimpleSelect } from "./SimpleSelect";
 import { SidebarScrollArea } from "./Sidebar";
+import { SimpleSelect } from "./SimpleSelect";
 // dnd-kit imports
+import { availableSectionsRegistry } from "@/registries/available-sections-registry";
 import {
-  DndContext,
   closestCenter,
+  DndContext,
   PointerSensor,
   useSensor,
   useSensors,
@@ -20,12 +21,9 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useEditorState } from "../../stores/useEditorState";
-import { SectionLibraryDialog } from "./SectionLibraryDialog";
-import { availableSectionsRegistry } from "@/registries/available-sections-registry";
-import { TemplateSwitchDropdown } from "./TemplateSwitchDropdown";
 import { DesignSidebar, DesignSidebarHeader } from "./design-system";
+import { SectionLibraryDialog } from "./SectionLibraryDialog";
 import { SidebarSectionGroup } from "./SidebarSectionGroup";
-import styles from "./BuilderToolbar.module.css";
 
 interface BuilderToolbarProps {
   pageConfig: any;
@@ -33,9 +31,6 @@ interface BuilderToolbarProps {
   onLocaleChange: (locale: string) => void;
   supportedLanguages?: string[];
   onRouteHandleChange: (handle: string) => void;
-  theme?: any;
-  selectedTemplateId?: string | null;
-  onTemplateChange?: (templateMeta: any) => void;
 }
 
 export default function BuilderToolbar({
@@ -44,9 +39,6 @@ export default function BuilderToolbar({
   onLocaleChange,
   supportedLanguages = ["en"], // Default to English if not provided
   onRouteHandleChange,
-  theme,
-  selectedTemplateId,
-  onTemplateChange,
 }: BuilderToolbarProps) {
   const {
     selectedWidgetId,
@@ -107,9 +99,13 @@ export default function BuilderToolbar({
     return Object.values(entries).some((section: any) => {
       const libraryId = section.id;
       // Exact match (template sections)
-      if (sectionId === libraryId) return true;
+      if (sectionId === libraryId) {
+        return true;
+      }
       // Starts with library id + dash (library-added sections with nanoid)
-      if (sectionId.startsWith(libraryId + "-")) return true;
+      if (sectionId.startsWith(libraryId + "-")) {
+        return true;
+      }
       return false;
     });
   };
@@ -195,26 +191,20 @@ export default function BuilderToolbar({
   return (
     <>
       <DesignSidebar side="left">
-        <DesignSidebarHeader>
-          <TemplateSwitchDropdown
-            theme={theme}
-            selectedTemplateId={selectedTemplateId}
-            onTemplateChange={onTemplateChange}
-          />
-        </DesignSidebarHeader>
-
         {/* Route Handle Input */}
         {routeHandleKey && (
-          <div className="px-4 pb-2">
-            <Input
-              label="Route Handle"
-              value={routeHandle || ""}
-              onChange={(e) => onRouteHandleChange(e.target.value)}
-              placeholder="Enter route handle"
-              size="sm"
-              className="w-full"
-            />
-          </div>
+          <DesignSidebarHeader>
+            <div className="px-4 pb-2">
+              <Input
+                label="Route Handle"
+                value={routeHandle || ""}
+                onChange={(e) => onRouteHandleChange(e.target.value)}
+                placeholder="Enter route handle"
+                size="sm"
+                className="w-full"
+              />
+            </div>
+          </DesignSidebarHeader>
         )}
 
         {/* Locale Selector */}
@@ -277,7 +267,9 @@ export default function BuilderToolbar({
       <SectionLibraryDialog
         open={isAddSectionModalOpen}
         onConfirm={(selectedKey) => {
-          if (!selectedKey) return;
+          if (!selectedKey) {
+            return;
+          }
           handleAddSectionFromLibrary(selectedKey);
         }}
         onClose={handleCloseAddSectionModal}

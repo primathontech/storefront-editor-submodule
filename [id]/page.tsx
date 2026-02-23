@@ -179,7 +179,13 @@ export default function UnifiedEditorPage() {
 
   return (
     <div className="flex flex-col h-screen bg-[#F8F8F8]">
-      <EditorHeader2 theme={theme} onSave={handleSave} isSaving={isSaving} />
+      <EditorHeader2
+        theme={theme}
+        onSave={handleSave}
+        isSaving={isSaving}
+        selectedTemplateId={templateMeta?.id || null}
+        onTemplateChange={handleTemplateChange}
+      />
 
       {templateMeta ? (
         <RightSidebarWidthProvider>

@@ -11,8 +11,6 @@
 .dragHandle {
   display: grid;
   grid-template-columns: repeat(2, 6px);
-  gap: 6px;
-  margin-top: 6px;
   cursor: grab;
 }
 

@@ -359,9 +359,6 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
               await getTranslations(themeId, templateMeta.id, newLocale);
             }
           }}
-          theme={theme}
-          selectedTemplateId={selectedTemplateId || templateMeta?.id || null}
-          onTemplateChange={onTemplateChange}
         />
       )}
       <div className="flex-1 overflow-auto p-4 flex justify-center">

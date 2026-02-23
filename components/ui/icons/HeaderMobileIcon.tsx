@@ -24,44 +24,37 @@ export const HeaderMobileIcon: React.FC<HeaderMobileIconProps> = ({
       style={{ width: "28px", height: "28px", aspectRatio: "1/1", ...style }}
       {...props}
     >
-      {/* Outer phone body */}
+      {/* Outer phone body - scaled up to fill more space */}
       <rect
-        x="9"
-        y="4"
-        width="10"
-        height="20"
-        rx="2.5"
+        x="7"
+        y="3"
+        width="14"
+        height="22"
+        rx="3"
         fill="transparent"
         stroke="currentColor"
       />
       {/* Screen area */}
       <rect
-        x="10.2"
-        y="6"
-        width="7.6"
-        height="14"
+        x="8"
+        y="5"
+        width="12"
+        height="16"
         rx="1.5"
         fill="currentColor"
         opacity="0.08"
       />
       {/* Top notch / speaker */}
       <rect
-        x="11.5"
-        y="5"
-        width="5"
-        height="1.2"
-        rx="0.6"
+        x="9.5"
+        y="4"
+        width="8"
+        height="1.5"
+        rx="0.75"
         fill="currentColor"
       />
       {/* Home indicator */}
-      <rect
-        x="12.5"
-        y="22.5"
-        width="3"
-        height="1"
-        rx="0.5"
-        fill="currentColor"
-      />
+      <rect x="11" y="23" width="6" height="1.2" rx="0.6" fill="currentColor" />
     </svg>
   );
 };

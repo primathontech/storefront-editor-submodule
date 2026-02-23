@@ -1,21 +1,24 @@
+import { useToast } from "@/ui/context/toast/ToastContext";
 import React, { useState } from "react";
 import { useDualTranslationStore } from "../../stores/dualTranslationStore";
 import { useEditorState } from "../../stores/useEditorState";
-import { useToast } from "@/ui/context/toast/ToastContext";
 import { Button, IconButton } from "./design-system";
-import { PreviewIcon } from "./icons/PreviewIcon";
+import styles from "./EditorHeader2.module.css";
 import { EditIcon } from "./icons/EditIcon";
 import { HeaderHomeIcon } from "./icons/HeaderHomeIcon";
-import { HeaderMonitorIcon } from "./icons/HeaderMonitorIcon";
-import { HeaderTabletIcon } from "./icons/HeaderTabletIcon";
 import { HeaderMobileIcon } from "./icons/HeaderMobileIcon";
+import { HeaderMonitorIcon } from "./icons/HeaderMonitorIcon";
 import { HeaderStackedIcon } from "./icons/HeaderStackedIcon";
-import styles from "./EditorHeader2.module.css";
+import { HeaderTabletIcon } from "./icons/HeaderTabletIcon";
+import { PreviewIcon } from "./icons/PreviewIcon";
+import { TemplateSwitchDropdown } from "./TemplateSwitchDropdown";
 
 interface EditorHeader2Props {
   theme?: any;
   onSave?: () => void;
   isSaving?: boolean;
+  selectedTemplateId?: string | null;
+  onTemplateChange?: (templateMeta: any) => void;
 }
 
 // Feature flag: only save to API when explicitly enabled
@@ -28,6 +31,8 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
   theme,
   onSave,
   isSaving = false,
+  selectedTemplateId,
+  onTemplateChange,
 }) => {
   const {
     saveTranslations,
@@ -130,8 +135,19 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
         <span className={styles["theme-name"]}>{theme?.name || theme?.id}</span>
       </div>
 
-      {/* Center - Device Controls */}
+      {/* Center - Template Dropdown and Device Controls */}
       <div className={styles["center-container"]}>
+        <div className={styles["template-dropdown-wrapper"]}>
+          <TemplateSwitchDropdown
+            theme={theme}
+            selectedTemplateId={selectedTemplateId}
+            onTemplateChange={onTemplateChange}
+          />
+        </div>
+      </div>
+
+      {/* Right side - Preview/Edit toggle and Save Button */}
+      <div className={styles["right-container"]}>
         <div className={styles["device-group"]}>
           {DEVICES.map(({ id, label, Icon }) => (
             <IconButton
@@ -152,10 +168,6 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
             />
           ))}
         </div>
-      </div>
-
-      {/* Right side - Preview/Edit toggle and Save Button */}
-      <div className={styles["right-container"]}>
         <div className={styles["action-buttons-container"]}>
           <Button
             variant="secondary"
