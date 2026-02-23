@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
 import { clsx } from "clsx";
+import * as React from "react";
 import styles from "./Dropdown.module.css";
 
 export interface DropdownOption {
@@ -10,23 +10,23 @@ export interface DropdownOption {
   disabled?: boolean;
 }
 
-export interface DropdownOptionGroup {
-  label: string;
+export interface DropdownProps {
+  /**
+   * Selected value
+   */
+  value?: string;
+  /**
+   * Change handler
+   */
+  onChange?: (value: string) => void;
+  /**
+   * Options array
+   */
   options: DropdownOption[];
-}
-
-export interface DropdownProps extends Omit<
-  React.SelectHTMLAttributes<HTMLSelectElement>,
-  "size"
-> {
   /**
-   * Dropdown variant
+   * Placeholder text
    */
-  variant?: "default" | "outline" | "ghost";
-  /**
-   * Dropdown size
-   */
-  size?: "xs" | "sm" | "md" | "lg";
+  placeholder?: string;
   /**
    * Label text displayed above the dropdown
    */
@@ -40,29 +40,9 @@ export interface DropdownProps extends Omit<
    */
   error?: string;
   /**
-   * Options array (flat list)
+   * Disabled state
    */
-  options?: DropdownOption[];
-  /**
-   * Option groups (for grouped options)
-   */
-  groups?: DropdownOptionGroup[];
-  /**
-   * Placeholder text
-   */
-  placeholder?: string;
-  /**
-   * Left icon (displayed before the select)
-   */
-  leftIcon?: React.ReactNode;
-  /**
-   * Right icon (displayed after the select, replaces default chevron)
-   */
-  rightIcon?: React.ReactNode;
-  /**
-   * Show default chevron icon
-   */
-  showChevron?: boolean;
+  disabled?: boolean;
   /**
    * Full width dropdown
    */
@@ -77,47 +57,113 @@ export interface DropdownProps extends Omit<
   containerClassName?: string;
 }
 
-const Dropdown = React.forwardRef<HTMLSelectElement, DropdownProps>(
+const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
   (
     {
-      variant = "default",
-      size = "md",
+      value,
+      onChange,
+      options = [],
+      placeholder = "Select...",
       label,
       helperText,
       error,
-      options = [],
-      groups = [],
-      placeholder,
-      leftIcon,
-      rightIcon,
-      showChevron = true,
+      disabled = false,
       fullWidth = false,
       className,
       containerClassName,
-      disabled,
-      children,
-      ...props
     },
     ref
   ) => {
-    const hasError = !!error;
-    const isDisabled = disabled;
+    const [isOpen, setIsOpen] = React.useState(false);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const menuRef = React.useRef<HTMLDivElement>(null);
 
-    // Determine if we should use groups or flat options
-    const hasGroups = groups.length > 0;
-    const hasOptions = options.length > 0 || React.Children.count(children) > 0;
-
-    const selectClasses = clsx(
-      styles.select,
-      styles[`select-${size}`],
-      styles[`select-${variant}`],
-      hasError && styles["select-error"],
-      isDisabled && styles["select-disabled"],
-      leftIcon && styles["select-with-left-icon"],
-      (rightIcon || showChevron) && styles["select-with-right-icon"],
-      fullWidth && styles["select-full-width"],
-      className
+    const selectedOption = React.useMemo(
+      () => options.find((opt) => opt.value === value),
+      [options, value]
     );
+
+    const hasError = !!error;
+
+    React.useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (
+          containerRef.current &&
+          !containerRef.current.contains(e.target as Node)
+        ) {
+          setIsOpen(false);
+        }
+      };
+
+      if (isOpen) {
+        document.addEventListener("mousedown", handleClickOutside);
+      }
+
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [isOpen]);
+
+    React.useEffect(() => {
+      if (isOpen && menuRef.current) {
+        const selectedEl = menuRef.current.querySelector(
+          `[data-value="${value}"]`
+        ) as HTMLElement;
+        if (selectedEl) {
+          selectedEl.scrollIntoView({ block: "nearest" });
+        }
+      }
+    }, [isOpen, value]);
+
+    const handleSelect = (optionValue: string) => {
+      if (onChange) {
+        onChange(optionValue);
+      }
+      setIsOpen(false);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (disabled) {
+        return;
+      }
+
+      switch (e.key) {
+        case "Enter":
+        case " ":
+          e.preventDefault();
+          setIsOpen(!isOpen);
+          break;
+        case "Escape":
+          setIsOpen(false);
+          break;
+        case "ArrowDown":
+          e.preventDefault();
+          if (!isOpen) {
+            setIsOpen(true);
+          } else {
+            const currentIndex = options.findIndex(
+              (opt) => opt.value === value
+            );
+            const nextIndex = Math.min(currentIndex + 1, options.length - 1);
+            if (onChange && options[nextIndex]) {
+              onChange(options[nextIndex].value);
+            }
+          }
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          if (isOpen) {
+            const currentIndex = options.findIndex(
+              (opt) => opt.value === value
+            );
+            const prevIndex = Math.max(currentIndex - 1, 0);
+            if (onChange && options[prevIndex]) {
+              onChange(options[prevIndex].value);
+            }
+          }
+          break;
+      }
+    };
 
     const containerClasses = clsx(
       styles.container,
@@ -125,109 +171,88 @@ const Dropdown = React.forwardRef<HTMLSelectElement, DropdownProps>(
       containerClassName
     );
 
+    const triggerClasses = clsx(
+      styles.trigger,
+      isOpen && styles["trigger-open"],
+      disabled && styles["trigger-disabled"],
+      hasError && styles["trigger-error"],
+      className
+    );
+
     return (
-      <div className={containerClasses}>
+      <div ref={containerRef} className={containerClasses}>
         {label && (
           <label
-            htmlFor={props.id}
-            className={clsx(
-              styles.label,
-              styles[`label-${size}`],
-              hasError && styles["label-error"]
-            )}
+            className={clsx(styles.label, hasError && styles["label-error"])}
           >
             {label}
           </label>
         )}
 
-        <div className={styles["select-wrapper"]}>
-          {leftIcon && (
-            <span className={styles["select-icon-left"]} aria-hidden="true">
-              {leftIcon}
-            </span>
-          )}
-
-          <select
+        <div className={styles["dropdown-wrapper"]}>
+          <button
             ref={ref}
-            className={selectClasses}
-            disabled={isDisabled}
+            type="button"
+            className={triggerClasses}
+            onClick={() => !disabled && setIsOpen(!isOpen)}
+            onKeyDown={handleKeyDown}
+            disabled={disabled}
+            aria-haspopup="listbox"
+            aria-expanded={isOpen}
             aria-invalid={hasError}
-            aria-describedby={
-              error || helperText
-                ? `${props.id || "dropdown"}-${error ? "error" : "helper"}`
-                : undefined
-            }
-            {...props}
           >
-            {placeholder && (
-              <option value="" disabled hidden>
-                {placeholder}
-              </option>
-            )}
-
-            {/* Render option groups if provided */}
-            {hasGroups &&
-              groups.map((group, groupIndex) => (
-                <optgroup key={groupIndex} label={group.label}>
-                  {group.options.map((option) => (
-                    <option
-                      key={option.value}
-                      value={option.value}
-                      disabled={option.disabled}
-                    >
-                      {option.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-
-            {/* Render flat options if provided */}
-            {!hasGroups &&
-              hasOptions &&
-              options.map((option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                  disabled={option.disabled}
-                >
-                  {option.label}
-                </option>
-              ))}
-
-            {/* Render children if provided (for custom option elements) */}
-            {!hasGroups && !hasOptions && children}
-          </select>
-
-          {(rightIcon || showChevron) && (
-            <span className={styles["select-icon-right"]} aria-hidden="true">
-              {rightIcon || (
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className={styles.chevron}
-                >
-                  <path
-                    d="M5 7.5L10 12.5L15 7.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
+            <span className={styles["trigger-text"]}>
+              {selectedOption?.label || placeholder}
             </span>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              className={clsx(styles.chevron, isOpen && styles["chevron-open"])}
+            >
+              <path
+                d="M4 6L8 10L12 6"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+
+          {isOpen && (
+            <div ref={menuRef} className={styles.menu} role="listbox">
+              <div className={styles["menu-content"]}>
+                {options.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={clsx(
+                      styles["menu-item"],
+                      value === option.value && styles["menu-item-selected"],
+                      option.disabled && styles["menu-item-disabled"]
+                    )}
+                    onClick={() =>
+                      !option.disabled && handleSelect(option.value)
+                    }
+                    disabled={option.disabled}
+                    data-value={option.value}
+                    role="option"
+                    aria-selected={value === option.value}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 
         {(error || helperText) && (
           <div
-            id={`${props.id || "dropdown"}-${error ? "error" : "helper"}`}
             className={clsx(
               styles["helper-text"],
-              styles[`helper-text-${size}`],
               hasError && styles["helper-text-error"]
             )}
           >

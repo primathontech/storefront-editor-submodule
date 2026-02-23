@@ -1,36 +1,55 @@
 .group {
-  display: flex;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 16px;
+  column-gap: 12px;
   background: #ffffff;
   border: 1px solid #dfdfdf;
   border-radius: 6px;
   padding: 12px;
 }
 
+.stretchedLink {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  text-decoration: none;
+}
+
+.groupError {
+  background: #fff5f5;
+  border-color: #ff5050;
+}
+
+.groupSelected {
+  border-color: #1d4a88;
+}
+
 .dragHandle {
+  position: relative;
+  z-index: 2;
   display: grid;
   grid-template-columns: repeat(2, 6px);
   cursor: grab;
 }
 
 .sectionContent {
-  flex: 1;
-}
-
-.sectionHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  min-width: 0;
 }
 
 .headerActions {
+  position: relative;
+  z-index: 2;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
 }
 
 .title {
+  position: relative;
+  z-index: 1;
   margin: 0;
   font-family: var(
     --font-inter,
@@ -45,42 +64,32 @@
   font-weight: 400;
   line-height: 12px;
   letter-spacing: 0;
-  vertical-align: middle;
   color: #555555;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.iconButton {
-  background: transparent;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  color: #6b7280;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.closeButton {
-  background: transparent;
-  border: none;
-  padding: 4px;
-  cursor: pointer;
-  color: #6b7280;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.15s ease;
-}
-
-.closeButton:hover {
-  color: #374151;
+.title + .title {
+  margin-top: 4px;
 }
 
 .content {
   margin-top: 4px;
 }
 
+.errorIcon {
+  padding: 4px;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .addSectionButton {
+  position: relative;
+  z-index: 2;
   padding: 0;
   gap: 4px;
   min-height: auto;

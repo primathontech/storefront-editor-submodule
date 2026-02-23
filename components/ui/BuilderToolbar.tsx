@@ -2,9 +2,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Input } from "./Input";
+import { Button, Dropdown } from "./design-system";
 import { SidebarScrollArea } from "./Sidebar";
-import { SimpleSelect } from "./SimpleSelect";
 // dnd-kit imports
 import { availableSectionsRegistry } from "@/registries/available-sections-registry";
 import {
@@ -21,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useEditorState } from "../../stores/useEditorState";
+import styles from "./BuilderToolbar.module.css";
 import { DesignSidebar, DesignSidebarHeader } from "./design-system";
 import { SectionLibraryDialog } from "./SectionLibraryDialog";
 import { SidebarSectionGroup } from "./SidebarSectionGroup";
@@ -78,7 +78,7 @@ export default function BuilderToolbar({
 
   // Defensive check for pageConfig (after all hooks)
   if (!pageConfig || !Array.isArray(pageConfig.sections)) {
-    return <div className="text-gray-500 p-4">No template loaded.</div>;
+    return <div className={styles["no-template"]}>No template loaded.</div>;
   }
 
   const handleCloseAddSectionModal = () => {
@@ -108,11 +108,6 @@ export default function BuilderToolbar({
       }
       return false;
     });
-  };
-
-  const handleSectionSelect = (sectionId: string) => {
-    setSelectedSection(sectionId);
-    setShowSettingsDrawer(true);
   };
 
   const handleWidgetSelect = (widgetId: string, sectionId: string) => {
@@ -164,13 +159,6 @@ export default function BuilderToolbar({
           dragListeners={listeners}
           dragAttributes={attributes}
           dragStyle={dragStyle}
-          onTitleClick={(widgetId, sectionId) => {
-            if (widgetId === sectionId) {
-              handleSectionSelect(sectionId);
-            } else {
-              handleWidgetSelect(widgetId, sectionId);
-            }
-          }}
           onWidgetClick={handleWidgetSelect}
           onClose={removeSection}
           onAddSection={(sectionId) => {
@@ -191,59 +179,58 @@ export default function BuilderToolbar({
   return (
     <>
       <DesignSidebar side="left">
+        <DesignSidebarHeader>
+          <span className={styles["page-title"]}>Home Page</span>
+        </DesignSidebarHeader>
+
         {/* Route Handle Input */}
-        {routeHandleKey && (
-          <DesignSidebarHeader>
-            <div className="px-4 pb-2">
-              <Input
-                label="Route Handle"
-                value={routeHandle || ""}
-                onChange={(e) => onRouteHandleChange(e.target.value)}
-                placeholder="Enter route handle"
-                size="sm"
-                className="w-full"
-              />
-            </div>
-          </DesignSidebarHeader>
-        )}
+        {/* {routeHandleKey && (
+          <div className={styles["route-handle-container"]}>
+            <Input
+              label="Route Handle"
+              value={routeHandle || ""}
+              onChange={(e) => onRouteHandleChange(e.target.value)}
+              placeholder="Enter route handle"
+              size="md"
+              fullWidth
+            />
+          </div>
+        )} */}
 
         {/* Locale Selector */}
         {supportedLanguages?.length > 1 && (
-          <div className="px-4 pb-2">
-            <SimpleSelect
+          <div className={styles["locale-selector-container"]}>
+            <Dropdown
               options={supportedLanguages.map((locale) => ({
                 value: locale,
                 label: locale.toUpperCase(),
               }))}
               value={currentLocale}
-              onSelect={(value: string | null) =>
-                value && onLocaleChange(value)
-              }
+              onChange={(value) => onLocaleChange(value)}
               placeholder="Select Language"
-              size="sm"
-              className="w-full"
+              fullWidth
             />
           </div>
         )}
 
-        <SidebarScrollArea className="p-3 space-y-3">
+        <SidebarScrollArea className={styles["sections-scroll"]}>
           {pageConfig.sections.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <div className="text-3xl mb-3 opacity-50">📄</div>
-              <p className="text-sm font-medium mb-1">No sections yet</p>
-              <p className="text-xs text-gray-400 mb-4">
+            <div className={styles["empty-state"]}>
+              <p className={styles["empty-state-title"]}>No sections yet</p>
+              <p className={styles["empty-state-description"]}>
                 Add a section to get started
               </p>
-              <button
-                type="button"
+              <Button
+                variant="primary"
+                size="md"
                 onClick={() => {
                   setInsertAfterIndex(null);
                   setIsAddSectionModalOpen(true);
                 }}
-                className="px-4 py-2 rounded text-sm font-medium transition-colors bg-green-600 text-white hover:bg-green-700"
+                className={styles["empty-state-button"]}
               >
                 Add section
-              </button>
+              </Button>
             </div>
           ) : (
             <DndContext
