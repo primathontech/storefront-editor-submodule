@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Input } from "./Input";
-import { Label } from "@/ui/atomic";
-import type { BaseComponentProps } from "../types";
 import { cn } from "../../utils/utils";
+import type { BaseComponentProps } from "../types";
+import { Input } from "./design-system";
+import { TrashRedIcon } from "./icons/TrashIcon";
+import styles from "./ObjectArrayInput.module.css";
 
 export interface ObjectArrayInputProps extends BaseComponentProps {
   label?: string;
@@ -58,51 +59,41 @@ const ObjectArrayInput = React.forwardRef<
     };
 
     return (
-      <div className={cn("space-y-4", className)} ref={ref} {...props}>
-        {label && (
-          <Label className="block text-sm font-medium text-gray-700">
-            {label}
-          </Label>
-        )}
+      <div className={cn(styles.root, className)} ref={ref} {...props}>
+        {label && <span className={styles.label}>{label}</span>}
 
-        <div className="space-y-3">
+        <div className={styles.items}>
           {safeValue.map((item, index) => (
-            <div
-              key={index}
-              className="border border-gray-200 rounded-lg p-4 bg-gray-50"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-medium text-gray-600">
-                  Item {index + 1}
-                </span>
+            <div key={index} className={styles.itemCard}>
+              <div className={styles.itemHeader}>
+                <span className={styles.itemTitle}>Item {index + 1}</span>
                 {showControls && (
                   <button
                     type="button"
                     onClick={() => removeItem(index)}
                     disabled={disabled}
-                    className="bg-red-500 text-white border-none rounded px-2 py-1 text-xs cursor-pointer hover:bg-red-600 disabled:cursor-not-allowed"
+                    className={styles.removeButton}
                   >
-                    Remove
+                    <TrashRedIcon />
                   </button>
                 )}
               </div>
 
-              <div className="space-y-3">
+              <div className={styles.fields}>
                 {fields.map((fieldName) => (
                   <div key={fieldName}>
-                    <Label className="block text-xs font-medium mb-1 text-gray-500">
-                      {fieldName}
-                    </Label>
                     <Input
+                      label={fieldName}
                       type="text"
-                      size="sm"
+                      size="md"
                       value={item?.[fieldName] || ""}
                       onChange={(e) =>
                         updateItem(index, fieldName, e.target.value)
                       }
                       disabled={disabled}
                       placeholder={`Enter ${fieldName}`}
-                      error={error}
+                      fullWidth
+                      className={error ? styles.inputError : undefined}
                     />
                   </div>
                 ))}
@@ -112,19 +103,24 @@ const ObjectArrayInput = React.forwardRef<
         </div>
 
         {showControls && (
-          <button
-            type="button"
-            onClick={addItem}
-            disabled={disabled}
-            className="bg-blue-500 text-white border-none rounded px-4 py-2 cursor-pointer hover:bg-blue-600 disabled:cursor-not-allowed text-sm"
-          >
-            + Add {label || "Item"}
-          </button>
+          <div className={styles.addRow}>
+            <button
+              type="button"
+              onClick={addItem}
+              disabled={disabled}
+              className={styles.addButton}
+            >
+              + Add {label || "Item"}
+            </button>
+          </div>
         )}
 
         {helperText && (
           <p
-            className={cn("text-xs", error ? "text-red-500" : "text-gray-500")}
+            className={cn(
+              styles.helperText,
+              error ? styles.helperTextError : styles.helperTextNormal
+            )}
           >
             {helperText}
           </p>

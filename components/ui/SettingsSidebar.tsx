@@ -1,14 +1,20 @@
 "use client";
 
-import React, { useMemo, useCallback } from "react";
-import { DynamicForm } from "./DynamicForm";
-import { convertSchemaToFormSchema } from "../../utils/schema-converter";
-import { TranslationService } from "@/lib/i18n/translation-service";
-import { Sidebar, SidebarHeader, SidebarContent } from "./Sidebar";
-import { useRightSidebarWidth } from "../../context/RightSidebarWidthContext";
-import { useEditorState } from "../../stores/useEditorState";
 import { sectionRegistry } from "@/app/editor/schemas/section-registry";
 import { widgetRegistry } from "@/cms/schemas/widget-registry";
+import { TranslationService } from "@/lib/i18n/translation-service";
+import React, { useCallback, useMemo } from "react";
+import { useRightSidebarWidth } from "../../context/RightSidebarWidthContext";
+import { useEditorState } from "../../stores/useEditorState";
+import { convertSchemaToFormSchema } from "../../utils/schema-converter";
+import {
+  DesignSidebar,
+  DesignSidebarHeader,
+  IconButton,
+} from "./design-system";
+import { DynamicForm } from "./DynamicForm";
+import { CloseIcon } from "./icons/CloseIcon";
+import styles from "./SettingsSidebar.module.css";
 
 interface SettingsSidebarProps {
   translationService: TranslationService | null;
@@ -67,11 +73,15 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   // Handlers for settings changes
   const handleSectionSettingChange = useCallback(
     (key: string, value: any) => {
-      if (!selectedSectionId) return;
+      if (!selectedSectionId) {
+        return;
+      }
       const section = currentPageConfig?.sections?.find(
         (s: any) => s.id === selectedSectionId
       );
-      if (!section) return;
+      if (!section) {
+        return;
+      }
 
       updateSection(selectedSectionId, {
         settings: {
@@ -85,15 +95,21 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 
   const handleWidgetSettingChange = useCallback(
     (key: string, value: any) => {
-      if (!selectedSectionId || !selectedWidgetId) return;
+      if (!selectedSectionId || !selectedWidgetId) {
+        return;
+      }
       const section = currentPageConfig?.sections?.find(
         (s: any) => s.id === selectedSectionId
       );
-      if (!section) return;
+      if (!section) {
+        return;
+      }
       const widget = section.widgets?.find(
         (w: any) => w.id === selectedWidgetId
       );
-      if (!widget) return;
+      if (!widget) {
+        return;
+      }
 
       updateWidget(selectedSectionId, selectedWidgetId, {
         settings: {
@@ -122,49 +138,20 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   };
 
   return (
-    <Sidebar width={width} borderSide="left" className="flex-shrink-0">
-      <SidebarHeader className="p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900">{getTitle()}</h3>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
-            title="Close settings"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-      </SidebarHeader>
+    <DesignSidebar side="right" width={width}>
+      <DesignSidebarHeader>
+        <h3 className={styles.title}>{getTitle()}</h3>
+        <IconButton
+          icon={<CloseIcon />}
+          variant="ghost"
+          size="sm"
+          shape="square"
+          onClick={handleClose}
+          aria-label="Close settings"
+        />
+      </DesignSidebarHeader>
 
-      <SidebarContent className="p-6">
-        {/* Section Settings */}
-        {selectedSection && selectedSectionSchema && (
-          <>
-            <DynamicForm
-              schema={convertSchemaToFormSchema(
-                selectedSectionSchema.settingsSchema
-              )}
-              values={selectedSection.settings}
-              onUpdate={handleSectionSettingChange}
-              translationService={translationService}
-              sectionId={selectedSectionId || undefined}
-            />
-            <br />
-          </>
-        )}
-
+      <div className={styles.content}>
         {/* Widget Settings */}
         {selectedWidget && selectedWidgetSchema && (
           <>
@@ -178,44 +165,60 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
               sectionId={selectedSectionId || undefined}
             />
 
+            {/* Section Settings */}
+            {selectedSection && selectedSectionSchema && (
+              <>
+                <DynamicForm
+                  schema={convertSchemaToFormSchema(
+                    selectedSectionSchema.settingsSchema
+                  )}
+                  values={selectedSection.settings}
+                  onUpdate={handleSectionSettingChange}
+                  translationService={translationService}
+                  sectionId={selectedSectionId || undefined}
+                />
+                <br />
+              </>
+            )}
+
             {/*
-              Legacy DataSourceEditor usage (kept as a reference for future reintroduction).
-              Original location: BuilderToolbar, before settings were moved to the right sidebar.
+                Legacy DataSourceEditor usage (kept as a reference for future reintroduction).
+                Original location: BuilderToolbar, before settings were moved to the right sidebar.
 
-              Example wiring (to adapt when we bring DataSourceEditor back here):
+                Example wiring (to adapt when we bring DataSourceEditor back here):
 
-              {selectedWidget &&
-                selectedDataSource &&
-                selectedWidget.dataSourceKey && (
-                  <DataSourceEditor
-                    dataSource={selectedDataSource}
-                    onUpdateParams={(updates) =>
-                      updateDataSource(selectedWidget.dataSourceKey, {
-                        params: {
-                          ...(selectedDataSource.params || {}),
-                          ...updates,
-                        },
-                      })
-                    }
-                  />
-                )}
+                {selectedWidget &&
+                  selectedDataSource &&
+                  selectedWidget.dataSourceKey && (
+                    <DataSourceEditor
+                      dataSource={selectedDataSource}
+                      onUpdateParams={(updates) =>
+                        updateDataSource(selectedWidget.dataSourceKey, {
+                          params: {
+                            ...(selectedDataSource.params || {}),
+                            ...updates,
+                          },
+                        })
+                      }
+                    />
+                  )}
 
-              <br />
-            */}
+                <br />
+              */}
           </>
         )}
 
         {/* No Selection State */}
         {!selectedSection && !selectedWidget && (
-          <div className="text-center py-12 text-gray-500">
-            <div className="text-3xl mb-3 opacity-50">⚙️</div>
-            <p className="text-sm font-medium mb-1">No item selected</p>
-            <p className="text-xs text-gray-400">
+          <div className={styles.emptyState}>
+            <div className={styles.emptyStateIcon}>⚙️</div>
+            <p className={styles.emptyStateTitle}>No item selected</p>
+            <p className={styles.emptyStateDescription}>
               Select a section or widget to edit settings
             </p>
           </div>
         )}
-      </SidebarContent>
-    </Sidebar>
+      </div>
+    </DesignSidebar>
   );
 };

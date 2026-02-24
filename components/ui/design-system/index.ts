@@ -25,3 +25,16 @@ export {
 export { Input } from "./Input/Input";
 export type { InputProps } from "./Input/Input";
 
+export { Switch } from "./Switch/Switch";
+export type { SwitchProps } from "./Switch/Switch";
+
+export { SpacingFields } from "./SpacingFields/SpacingFields";
+export type {
+  SpacingFieldsProps,
+  SpacingSide,
+  SpacingValue
+} from "./SpacingFields/SpacingFields";
+
+export { Modal } from "./Modal/Modal";
+export type { ModalProps, ModalSize } from "./Modal/Modal";
+

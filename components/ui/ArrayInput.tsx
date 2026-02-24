@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Input } from "./Input";
-import { Label } from "@/ui/atomic";
+import { Input } from "./design-system";
 import type { BaseComponentProps } from "../types";
 import { cn } from "../../utils/utils";
+import { TrashRedIcon } from "./icons/TrashIcon";
+import styles from "./ArrayInput.module.css";
 
 export interface ArrayInputProps extends BaseComponentProps {
   label?: string;
@@ -63,96 +64,78 @@ const ArrayInput = React.forwardRef<HTMLDivElement, ArrayInputProps>(
     const canRemove = safeValue.length > minItems && !disabled;
 
     return (
-      <div className={cn("space-y-4", className)} ref={ref} {...props}>
+      <div className={cn(styles.root, className)} ref={ref} {...props}>
         {label && (
-          <Label className="block text-sm font-medium text-gray-700">
+          <span className={styles.label}>
             {label}
             {minItems > 0 && (
-              <span className="text-gray-500 font-normal ml-1">
+              <span className={styles.labelMeta}>
                 (min: {minItems}, max: {maxItems})
               </span>
             )}
-          </Label>
+          </span>
         )}
 
-        <div className="space-y-3">
+        <div className={styles.items}>
           {safeValue.map((item, index) => (
             <div
               key={index}
-              className={cn(
-                "border rounded-lg p-4 transition-colors",
-                error
-                  ? "border-red-300 bg-red-50"
-                  : "border-gray-200 bg-gray-50 hover:bg-gray-100"
-              )}
+              className={cn(styles.itemCard, error && styles.itemCardError)}
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-medium text-gray-600">
-                  Item {index + 1}
-                </span>
+              <div className={styles.itemHeader}>
+                <span className={styles.itemTitle}>Item {index + 1}</span>
                 {showControls && canRemove && (
                   <button
                     type="button"
                     onClick={() => removeItem(index)}
                     disabled={disabled}
-                    className={cn(
-                      "text-red-600 hover:text-red-800 hover:bg-red-100",
-                      "border border-red-300 rounded px-2 py-1 text-xs",
-                      "transition-colors duration-150",
-                      "disabled:opacity-50 disabled:cursor-not-allowed"
-                    )}
+                    className={styles.removeButton}
                     aria-label={`Remove item ${index + 1}`}
                   >
-                    Remove
+                    <TrashRedIcon />
                   </button>
                 )}
               </div>
 
-              <Input
-                type="text"
-                value={item || ""}
-                onChange={(e) => updateItem(index, e.target.value)}
-                disabled={disabled}
-                placeholder={placeholder}
-                error={error}
-                size="sm"
-              />
+              <div className={styles.fields}>
+                <Input
+                  type="text"
+                  size="md"
+                  value={item || ""}
+                  onChange={(e) => updateItem(index, e.target.value)}
+                  disabled={disabled}
+                  placeholder={placeholder}
+                  fullWidth
+                  helperText={!error ? helperText : undefined}
+                  error={error ? helperText : undefined}
+                />
+              </div>
             </div>
           ))}
         </div>
 
         {showControls && canAdd && (
-          <button
-            type="button"
-            onClick={addItem}
-            disabled={disabled}
-            className={cn(
-              "bg-blue-500 text-white border-none rounded px-4 py-2",
-              "cursor-pointer hover:bg-blue-600 transition-colors duration-150",
-              "disabled:opacity-50 disabled:cursor-not-allowed text-sm",
-              "flex items-center gap-2"
-            )}
-          >
-            <span className="text-lg">+</span>
-            Add {label || "Item"}
-          </button>
+          <div className={styles.addRow}>
+            <button
+              type="button"
+              onClick={addItem}
+              disabled={disabled}
+              className={styles.addButton}
+            >
+              + Add {label || "Item"}
+            </button>
+          </div>
         )}
 
-        {helperText && (
+        {helperText && safeValue.length === 0 && (
           <p
-            className={cn("text-xs", error ? "text-red-500" : "text-gray-500")}
+            className={cn(
+              styles.helperText,
+              error ? styles.helperTextError : styles.helperTextNormal
+            )}
           >
             {helperText}
           </p>
-        )}
-
-        {safeValue.length === 0 && (
-          <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
-            <p className="text-sm">No items added yet.</p>
-            <p className="text-xs mt-1">
-              Click "Add {label || "Item"}" to get started.
-            </p>
-          </div>
         )}
       </div>
     );

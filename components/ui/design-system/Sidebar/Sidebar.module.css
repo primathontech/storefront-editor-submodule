@@ -16,6 +16,7 @@
 
 .sidebarRight {
   border-left-width: 0.5px;
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
 }
 
 .sidebarGhost {

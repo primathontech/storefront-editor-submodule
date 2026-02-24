@@ -1,24 +1,25 @@
 "use client";
 
-import * as React from "react";
-import { Input } from "./Input";
-import { Checkbox } from "@/ui/atomic";
-import { Label } from "@/ui/atomic";
-import { ResponsiveSpacingInput } from "./ResponsiveSpacingInput";
-import { SimpleSelect } from "./SimpleSelect";
-import { ImageInput } from "./ImageInput";
-import { FAQInput } from "./FAQInput";
-import { RichTextInput } from "./RichTextInput";
-import { HtmlInput } from "./HtmlInput";
-import { ObjectArrayInput } from "./ObjectArrayInput";
-import { ArrayInput } from "./ArrayInput";
-import type { BaseComponentProps } from "../types";
-import { cn } from "../../utils/utils";
 import { TranslationService } from "@/lib/i18n/translation-service";
+import { Label } from "@/ui/atomic";
+import * as React from "react";
 import {
-  useDualTranslationStore,
   translationUtils,
+  useDualTranslationStore,
 } from "../../stores/dualTranslationStore";
+import { cn } from "../../utils/utils";
+import type { BaseComponentProps } from "../types";
+import { ArrayInput } from "./ArrayInput";
+import { Input as DesignInput, Switch } from "./design-system";
+import styles from "./DynamicForm.module.css";
+import { FAQInput } from "./FAQInput";
+import { HtmlInput } from "./HtmlInput";
+import { ImageInput } from "./ImageInput";
+import { Input } from "./Input";
+import { ObjectArrayInput } from "./ObjectArrayInput";
+import { ResponsiveSpacingInput } from "./ResponsiveSpacingInput";
+import { RichTextInput } from "./RichTextInput";
+import { SimpleSelect } from "./SimpleSelect";
 
 export interface FormFieldSchema {
   type:
@@ -220,41 +221,35 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
           };
 
           return (
-            <FieldWrapper
-              fieldHelperText={fieldHelperText}
-              fieldError={fieldError}
-            >
-              <Label className="block text-xs font-medium mb-1 text-gray-600">
-                {fieldLabel}
-              </Label>
-              <Input
+            <FieldWrapper fieldHelperText={undefined} fieldError={fieldError}>
+              <DesignInput
+                label={fieldLabel}
                 type="text"
-                size="sm"
+                size="md"
                 value={displayValue ?? ""}
                 onChange={handleTextChange}
                 disabled={fieldDisabled}
-                error={fieldError}
                 placeholder={fieldSchema.placeholder}
+                fullWidth
+                helperText={!fieldError ? fieldHelperText : undefined}
+                error={fieldError ? fieldHelperText : undefined}
               />
             </FieldWrapper>
           );
 
         case "boolean":
           return (
-            <FieldWrapper
-              fieldHelperText={fieldHelperText}
-              fieldError={fieldError}
-            >
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  checked={value}
-                  onCheckedChange={handleChange}
-                  disabled={fieldDisabled}
-                />
-                <Label className="text-xs font-medium text-gray-600">
-                  {fieldLabel}
-                </Label>
-              </div>
+            <FieldWrapper fieldHelperText={undefined} fieldError={fieldError}>
+              <Switch
+                checked={value || false}
+                onChange={handleChange}
+                disabled={fieldDisabled}
+                label={fieldLabel}
+                labelPosition="left"
+                size="sm"
+                helperText={!fieldError ? fieldHelperText : undefined}
+                error={fieldError ? fieldHelperText : undefined}
+              />
             </FieldWrapper>
           );
 
@@ -514,13 +509,13 @@ const FieldWrapper = ({
   fieldHelperText?: string;
   fieldError?: boolean;
 }) => (
-  <div className="mb-3">
+  <div className={styles.fieldWrapper}>
     {children}
     {fieldHelperText && (
       <p
         className={cn(
-          "text-xs mt-1",
-          fieldError ? "text-red-500" : "text-gray-500"
+          styles.helperText,
+          fieldError ? styles.helperTextError : styles.helperTextNormal
         )}
       >
         {fieldHelperText}

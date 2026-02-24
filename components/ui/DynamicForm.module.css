@@ -1,0 +1,31 @@
+.fieldWrapper {
+  padding: 6px 12px;
+  border-bottom: 0.5px solid #dfdfdf;
+}
+
+.helperText {
+  margin-top: 4px;
+  font-family: var(
+    --font-inter,
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif
+  );
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.helperTextError {
+  color: #dc2626;
+}
+
+.helperTextNormal {
+  color: #666666;
+}
+
+
+

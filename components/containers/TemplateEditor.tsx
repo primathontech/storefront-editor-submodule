@@ -415,7 +415,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
         </Frame>
       </div>
       {/* Right Settings Sidebar */}
-      {showSettingsDrawer && (
+      {device !== "fullscreen" && showSettingsDrawer && (
         <SettingsSidebar translationService={translationService} />
       )}
     </div>
