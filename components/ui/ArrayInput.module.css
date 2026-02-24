@@ -1,9 +1,10 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 6px 12px 6px;
+  gap: 8px;
+  padding: 12px;
   border-bottom: 0.5px solid #dfdfdf;
+  border-right: 0.5px solid #dfdfdf;
 }
 
 .label {

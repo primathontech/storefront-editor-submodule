@@ -44,6 +44,12 @@ export interface InputProps extends Omit<
    * Container className (for label + input wrapper)
    */
   containerClassName?: string;
+  /**
+   * Label visual variant
+   * - "default": prominent label (darker, more spacing)
+   * - "subtle": lighter label (used inside cards like FAQ/ObjectArray)
+   */
+  labelVariant?: "default" | "subtle";
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
@@ -60,6 +66,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       containerClassName,
       disabled,
       id,
+      labelVariant = "default",
       ...props
     },
     ref
@@ -94,6 +101,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className={clsx(
               styles.label,
               styles[`label-${size}`],
+              labelVariant === "subtle" && styles["label-subtle"],
               hasError && styles["label-error"]
             )}
           >

@@ -20,6 +20,7 @@
 .sidebarBlock {
   padding: 12px;
   border-bottom: 0.5px solid #dfdfdf;
+  border-right: 0.5px solid #dfdfdf;
 }
 
 .sidebarHeader {

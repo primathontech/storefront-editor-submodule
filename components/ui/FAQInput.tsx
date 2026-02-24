@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Input } from "./design-system";
-import { TrashRedIcon } from "./icons/TrashIcon";
 import styles from "./FAQInput.module.css";
+import { TrashRedIcon } from "./icons/TrashIcon";
 
 export interface FAQItem {
   question: string;
@@ -73,6 +73,7 @@ export const FAQInput: React.FC<FAQInputProps> = ({
             <div className={styles.fields}>
               <Input
                 label="Question"
+                labelVariant="subtle"
                 type="text"
                 size="md"
                 value={item.question}
@@ -83,6 +84,7 @@ export const FAQInput: React.FC<FAQInputProps> = ({
               />
               <Input
                 label="Answer"
+                labelVariant="subtle"
                 type="text"
                 size="md"
                 value={item.answer}

@@ -84,6 +84,7 @@ const ObjectArrayInput = React.forwardRef<
                   <div key={fieldName}>
                     <Input
                       label={fieldName}
+                      labelVariant="subtle"
                       type="text"
                       size="md"
                       value={item?.[fieldName] || ""}

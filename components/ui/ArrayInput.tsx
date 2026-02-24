@@ -100,6 +100,7 @@ const ArrayInput = React.forwardRef<HTMLDivElement, ArrayInputProps>(
               <div className={styles.fields}>
                 <Input
                   type="text"
+                  labelVariant="subtle"
                   size="md"
                   value={item || ""}
                   onChange={(e) => updateItem(index, e.target.value)}

@@ -29,6 +29,12 @@
   margin-bottom: 10px;
 }
 
+.label-subtle {
+  font-weight: 400;
+  color: #666666;
+  margin-bottom: 4px;
+}
+
 .label-xs {
   font-size: 11px;
 }
