@@ -4,6 +4,13 @@
   border-right: 0.5px solid #dfdfdf;
 }
 
+.rootWithHtmlField {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .helperText {
   margin-top: 4px;
   font-family: var(

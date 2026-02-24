@@ -471,16 +471,10 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
       }
     };
 
+    const rootClasses = cn(hasHtmlField && styles.rootWithHtmlField, className);
+
     return (
-      <div
-        className={cn(
-          hasHtmlField && "flex flex-col flex-1 min-h-0",
-          className
-        )}
-        ref={ref}
-        style={style}
-        {...props}
-      >
+      <div ref={ref} className={rootClasses} style={style} {...props}>
         {Object.entries(schema).map(([key, fieldSchema]) => (
           <React.Fragment key={key}>
             {renderField(key, fieldSchema)}
