@@ -48,8 +48,7 @@ export const TemplateSwitchDropdown: React.FC<TemplateSwitchDropdownProps> = ({
     return null;
   };
 
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const nextTemplateId = e.target.value;
+  const handleSelectChange = (nextTemplateId: string) => {
     if (!nextTemplateId) {
       return;
     }
@@ -58,8 +57,6 @@ export const TemplateSwitchDropdown: React.FC<TemplateSwitchDropdownProps> = ({
     if (foundTemplate) {
       resetEditorState();
       onTemplateChange?.(foundTemplate);
-      // Blur the select to remove focus state after template change
-      e.target.blur();
     }
   };
 
@@ -69,15 +66,12 @@ export const TemplateSwitchDropdown: React.FC<TemplateSwitchDropdownProps> = ({
 
   return (
     <Dropdown
-      id="template-select"
-      variant="ghost"
-      size="sm"
       value={selectedTemplateId || ""}
       onChange={handleSelectChange}
       groups={optionGroups}
-      aria-label="Select template to edit"
+      placeholder="Select template..."
       fullWidth
-      showChevron
+      variant="ghost"
     />
   );
 };

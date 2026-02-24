@@ -1,7 +1,8 @@
 "use client";
 
-import * as React from "react";
 import { clsx } from "clsx";
+import * as React from "react";
+import { createPortal } from "react-dom";
 import styles from "./Dropdown.module.css";
 
 export interface DropdownOption {
@@ -15,30 +16,15 @@ export interface DropdownOptionGroup {
   options: DropdownOption[];
 }
 
-export interface DropdownProps extends Omit<
-  React.SelectHTMLAttributes<HTMLSelectElement>,
-  "size"
-> {
+export interface DropdownProps {
   /**
-   * Dropdown variant
+   * Selected value
    */
-  variant?: "default" | "outline" | "ghost";
+  value?: string;
   /**
-   * Dropdown size
+   * Change handler
    */
-  size?: "xs" | "sm" | "md" | "lg";
-  /**
-   * Label text displayed above the dropdown
-   */
-  label?: string;
-  /**
-   * Helper text displayed below the dropdown
-   */
-  helperText?: string;
-  /**
-   * Error message (shows error state)
-   */
-  error?: string;
+  onChange?: (value: string) => void;
   /**
    * Options array (flat list)
    */
@@ -52,17 +38,21 @@ export interface DropdownProps extends Omit<
    */
   placeholder?: string;
   /**
-   * Left icon (displayed before the select)
+   * Label text displayed above the dropdown
    */
-  leftIcon?: React.ReactNode;
+  label?: string;
   /**
-   * Right icon (displayed after the select, replaces default chevron)
+   * Helper text displayed below the dropdown
    */
-  rightIcon?: React.ReactNode;
+  helperText?: string;
   /**
-   * Show default chevron icon
+   * Error message (shows error state)
    */
-  showChevron?: boolean;
+  error?: string;
+  /**
+   * Disabled state
+   */
+  disabled?: boolean;
   /**
    * Full width dropdown
    */
@@ -75,159 +65,313 @@ export interface DropdownProps extends Omit<
    * Container className (for label + dropdown wrapper)
    */
   containerClassName?: string;
+  /**
+   * Label placement: "stacked" (above) or "inline" (left of dropdown)
+   */
+  labelPlacement?: "stacked" | "inline";
+  /**
+   * Variant style: "default" (with border) or "ghost" (no border)
+   */
+  variant?: "default" | "ghost";
 }
 
-const Dropdown = React.forwardRef<HTMLSelectElement, DropdownProps>(
+const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
   (
     {
-      variant = "default",
-      size = "md",
+      value,
+      onChange,
+      options = [],
+      groups = [],
+      placeholder = "Select...",
       label,
       helperText,
       error,
-      options = [],
-      groups = [],
-      placeholder,
-      leftIcon,
-      rightIcon,
-      showChevron = true,
+      disabled = false,
       fullWidth = false,
       className,
       containerClassName,
-      disabled,
-      children,
-      ...props
+      labelPlacement = "stacked",
+      variant = "default",
     },
     ref
   ) => {
-    const hasError = !!error;
-    const isDisabled = disabled;
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [menuPosition, setMenuPosition] = React.useState<{
+      top: number;
+      left: number;
+      width: number;
+    } | null>(null);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const triggerRef = React.useRef<HTMLButtonElement>(null);
+    const menuRef = React.useRef<HTMLDivElement>(null);
 
-    // Determine if we should use groups or flat options
-    const hasGroups = groups.length > 0;
-    const hasOptions = options.length > 0 || React.Children.count(children) > 0;
-
-    const selectClasses = clsx(
-      styles.select,
-      styles[`select-${size}`],
-      styles[`select-${variant}`],
-      hasError && styles["select-error"],
-      isDisabled && styles["select-disabled"],
-      leftIcon && styles["select-with-left-icon"],
-      (rightIcon || showChevron) && styles["select-with-right-icon"],
-      fullWidth && styles["select-full-width"],
-      className
+    // Merge refs
+    React.useImperativeHandle(
+      ref,
+      () => triggerRef.current as HTMLButtonElement
     );
+
+    // Flatten groups to options if groups are provided
+    const allOptions = React.useMemo(() => {
+      if (groups.length > 0) {
+        return groups.flatMap((group) => group.options);
+      }
+      return options;
+    }, [options, groups]);
+
+    const selectedOption = React.useMemo(
+      () => allOptions.find((opt) => opt.value === value),
+      [allOptions, value]
+    );
+
+    const hasError = !!error;
+
+    React.useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (
+          containerRef.current &&
+          !containerRef.current.contains(e.target as Node) &&
+          menuRef.current &&
+          !menuRef.current.contains(e.target as Node)
+        ) {
+          setIsOpen(false);
+        }
+      };
+
+      if (isOpen) {
+        document.addEventListener("mousedown", handleClickOutside);
+      }
+
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [isOpen]);
+
+    React.useEffect(() => {
+      if (isOpen && triggerRef.current) {
+        const updateMenuPosition = () => {
+          const triggerRect = triggerRef.current?.getBoundingClientRect();
+          if (triggerRect) {
+            setMenuPosition({
+              top: triggerRect.bottom + window.scrollY + 4,
+              left: triggerRect.left + window.scrollX + triggerRect.width / 2,
+              width: triggerRect.width,
+            });
+          }
+        };
+
+        updateMenuPosition();
+        window.addEventListener("scroll", updateMenuPosition, true);
+        window.addEventListener("resize", updateMenuPosition);
+
+        return () => {
+          window.removeEventListener("scroll", updateMenuPosition, true);
+          window.removeEventListener("resize", updateMenuPosition);
+        };
+      } else {
+        setMenuPosition(null);
+      }
+    }, [isOpen]);
+
+    React.useEffect(() => {
+      if (isOpen && menuRef.current) {
+        const selectedEl = menuRef.current.querySelector(
+          `[data-value="${value}"]`
+        ) as HTMLElement;
+        if (selectedEl) {
+          selectedEl.scrollIntoView({ block: "nearest" });
+        }
+      }
+    }, [isOpen, value]);
+
+    const handleSelect = (optionValue: string) => {
+      if (onChange) {
+        onChange(optionValue);
+      }
+      setIsOpen(false);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (disabled) {
+        return;
+      }
+
+      switch (e.key) {
+        case "Enter":
+        case " ":
+          e.preventDefault();
+          setIsOpen(!isOpen);
+          break;
+        case "Escape":
+          setIsOpen(false);
+          break;
+        case "ArrowDown":
+          e.preventDefault();
+          if (!isOpen) {
+            setIsOpen(true);
+          } else {
+            const currentIndex = allOptions.findIndex(
+              (opt) => opt.value === value
+            );
+            const nextIndex = Math.min(currentIndex + 1, allOptions.length - 1);
+            if (onChange && allOptions[nextIndex]) {
+              onChange(allOptions[nextIndex].value);
+            }
+          }
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          if (isOpen) {
+            const currentIndex = allOptions.findIndex(
+              (opt) => opt.value === value
+            );
+            const prevIndex = Math.max(currentIndex - 1, 0);
+            if (onChange && allOptions[prevIndex]) {
+              onChange(allOptions[prevIndex].value);
+            }
+          }
+          break;
+      }
+    };
 
     const containerClasses = clsx(
       styles.container,
       fullWidth && styles["container-full-width"],
+      labelPlacement === "inline" && styles["container-inline"],
       containerClassName
     );
 
+    const triggerClasses = clsx(
+      styles.trigger,
+      styles[`trigger-${variant}`],
+      isOpen && styles["trigger-open"],
+      disabled && styles["trigger-disabled"],
+      hasError && styles["trigger-error"],
+      className
+    );
+
     return (
-      <div className={containerClasses}>
+      <div ref={containerRef} className={containerClasses}>
         {label && (
           <label
-            htmlFor={props.id}
             className={clsx(
               styles.label,
-              styles[`label-${size}`],
-              hasError && styles["label-error"]
+              hasError && styles["label-error"],
+              labelPlacement === "inline" && styles["label-inline"]
             )}
           >
             {label}
           </label>
         )}
 
-        <div className={styles["select-wrapper"]}>
-          {leftIcon && (
-            <span className={styles["select-icon-left"]} aria-hidden="true">
-              {leftIcon}
-            </span>
-          )}
-
-          <select
-            ref={ref}
-            className={selectClasses}
-            disabled={isDisabled}
+        <div className={styles["dropdown-wrapper"]}>
+          <button
+            ref={triggerRef}
+            type="button"
+            className={triggerClasses}
+            onClick={() => !disabled && setIsOpen(!isOpen)}
+            onKeyDown={handleKeyDown}
+            disabled={disabled}
+            aria-haspopup="listbox"
+            aria-expanded={isOpen}
             aria-invalid={hasError}
-            aria-describedby={
-              error || helperText
-                ? `${props.id || "dropdown"}-${error ? "error" : "helper"}`
-                : undefined
-            }
-            {...props}
           >
-            {placeholder && (
-              <option value="" disabled hidden>
-                {placeholder}
-              </option>
-            )}
-
-            {/* Render option groups if provided */}
-            {hasGroups &&
-              groups.map((group, groupIndex) => (
-                <optgroup key={groupIndex} label={group.label}>
-                  {group.options.map((option) => (
-                    <option
-                      key={option.value}
-                      value={option.value}
-                      disabled={option.disabled}
-                    >
-                      {option.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-
-            {/* Render flat options if provided */}
-            {!hasGroups &&
-              hasOptions &&
-              options.map((option) => (
-                <option
-                  key={option.value}
-                  value={option.value}
-                  disabled={option.disabled}
-                >
-                  {option.label}
-                </option>
-              ))}
-
-            {/* Render children if provided (for custom option elements) */}
-            {!hasGroups && !hasOptions && children}
-          </select>
-
-          {(rightIcon || showChevron) && (
-            <span className={styles["select-icon-right"]} aria-hidden="true">
-              {rightIcon || (
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className={styles.chevron}
-                >
-                  <path
-                    d="M5 7.5L10 12.5L15 7.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
+            <span className={styles["trigger-text"]}>
+              {selectedOption?.label || placeholder}
             </span>
-          )}
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              className={clsx(styles.chevron, isOpen && styles["chevron-open"])}
+            >
+              <path
+                d="M4 6L8 10L12 6"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+
+          {isOpen &&
+            menuPosition &&
+            typeof document !== "undefined" &&
+            createPortal(
+              <div
+                ref={menuRef}
+                className={styles.menu}
+                role="listbox"
+                style={{
+                  top: `${menuPosition.top}px`,
+                  left: `${menuPosition.left}px`,
+                  transform: "translateX(-50%)",
+                  width: `${Math.max(menuPosition.width, 260)}px`,
+                }}
+              >
+                <div className={styles["menu-content"]}>
+                  {groups.length > 0
+                    ? groups.map((group, groupIndex) => (
+                        <React.Fragment key={groupIndex}>
+                          {groupIndex > 0 && (
+                            <div className={styles["menu-separator"]} />
+                          )}
+                          {group.options.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              className={clsx(
+                                styles["menu-item"],
+                                value === option.value &&
+                                  styles["menu-item-selected"],
+                                option.disabled && styles["menu-item-disabled"]
+                              )}
+                              onClick={() =>
+                                !option.disabled && handleSelect(option.value)
+                              }
+                              disabled={option.disabled}
+                              data-value={option.value}
+                              role="option"
+                              aria-selected={value === option.value}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </React.Fragment>
+                      ))
+                    : allOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={clsx(
+                            styles["menu-item"],
+                            value === option.value &&
+                              styles["menu-item-selected"],
+                            option.disabled && styles["menu-item-disabled"]
+                          )}
+                          onClick={() =>
+                            !option.disabled && handleSelect(option.value)
+                          }
+                          disabled={option.disabled}
+                          data-value={option.value}
+                          role="option"
+                          aria-selected={value === option.value}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                </div>
+              </div>,
+              document.body
+            )}
         </div>
 
         {(error || helperText) && (
           <div
-            id={`${props.id || "dropdown"}-${error ? "error" : "helper"}`}
             className={clsx(
               styles["helper-text"],
-              styles[`helper-text-${size}`],
               hasError && styles["helper-text-error"]
             )}
           >
@@ -242,4 +386,3 @@ const Dropdown = React.forwardRef<HTMLSelectElement, DropdownProps>(
 Dropdown.displayName = "Dropdown";
 
 export { Dropdown };
-
