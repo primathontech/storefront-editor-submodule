@@ -10,7 +10,7 @@ import {
 import { cn } from "../../utils/utils";
 import type { BaseComponentProps } from "../types";
 import { ArrayInput } from "./ArrayInput";
-import { Input as DesignInput, Switch } from "./design-system";
+import { Input as DesignInput, Dropdown, Switch } from "./design-system";
 import styles from "./DynamicForm.module.css";
 import { FAQInput } from "./FAQInput";
 import { HtmlInput } from "./HtmlInput";
@@ -19,7 +19,6 @@ import { Input } from "./Input";
 import { ObjectArrayInput } from "./ObjectArrayInput";
 import { ResponsiveSpacingInput } from "./ResponsiveSpacingInput";
 import { RichTextInput } from "./RichTextInput";
-import { SimpleSelect } from "./SimpleSelect";
 
 export interface FormFieldSchema {
   type:
@@ -165,15 +164,14 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
               fieldHelperText={fieldHelperText}
               fieldError={fieldError}
             >
-              <Label className="block text-xs font-medium mb-1 text-gray-600">
-                {fieldLabel}
-              </Label>
-              <SimpleSelect
+              <Dropdown
+                label={fieldLabel}
+                labelPlacement="inline"
                 options={fieldSchema.options || []}
                 value={value}
-                onSelect={handleChange}
+                onChange={handleChange}
                 disabled={fieldDisabled}
-                size="sm"
+                fullWidth
               />
             </FieldWrapper>
           );

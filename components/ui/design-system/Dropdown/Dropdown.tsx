@@ -55,6 +55,10 @@ export interface DropdownProps {
    * Container className (for label + dropdown wrapper)
    */
   containerClassName?: string;
+  /**
+   * Label placement: "stacked" (above) or "inline" (left of dropdown)
+   */
+  labelPlacement?: "stacked" | "inline";
 }
 
 const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
@@ -71,6 +75,7 @@ const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
       fullWidth = false,
       className,
       containerClassName,
+      labelPlacement = "stacked",
     },
     ref
   ) => {
@@ -168,6 +173,7 @@ const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
     const containerClasses = clsx(
       styles.container,
       fullWidth && styles["container-full-width"],
+      labelPlacement === "inline" && styles["container-inline"],
       containerClassName
     );
 
@@ -183,7 +189,11 @@ const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
       <div ref={containerRef} className={containerClasses}>
         {label && (
           <label
-            className={clsx(styles.label, hasError && styles["label-error"])}
+            className={clsx(
+              styles.label,
+              hasError && styles["label-error"],
+              labelPlacement === "inline" && styles["label-inline"]
+            )}
           >
             {label}
           </label>
