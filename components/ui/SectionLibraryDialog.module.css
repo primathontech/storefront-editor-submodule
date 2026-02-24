@@ -203,7 +203,7 @@
 }
 
 /* Shared sizing for Section Library / Generate modals */
-.section-dialog-surface :global(.rounded-lg) {
+.section-dialog-surface :global(.dialog-surface-root) {
   width: 518px;
   border-radius: 8px !important;
 }
@@ -251,6 +251,95 @@
 }
 
 .empty-state-text {
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: center;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+/* Dialog Content */
+.dialog-content {
+  height: 330px;
+}
+
+/* Content Container */
+.content-container {
+  display: flex;
+  gap: 16px;
+  min-height: 0;
+  height: 100%;
+}
+
+/* Section List */
+.section-list {
+  width: 33.333333%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Preview Container */
+.preview-container {
+  height: 100%;
+  flex: 1;
+  border: 1px dashed #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  background-color: #f9fafb;
+}
+
+/* Preview Label */
+.preview-label {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+/* Preview Content */
+.preview-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Preview Image Wrapper */
+.preview-image-wrapper {
+  width: 100%;
+  max-width: 100%;
+  max-height: 288px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+
+.preview-image-wrapper:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Preview Image */
+.preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* No Preview Text */
+.no-preview-text {
   font-size: 12px;
   color: #9ca3af;
   text-align: center;

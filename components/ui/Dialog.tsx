@@ -1,5 +1,6 @@
 "use client";
 
+import { clsx } from "clsx";
 import * as React from "react";
 import styles from "./Dialog.module.css";
 
@@ -22,16 +23,18 @@ export const Dialog: React.FC<DialogProps> = ({
   headerAction,
   size = "md",
 }) => {
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
-  const maxWidthClass =
+  const sizeClass =
     size === "sm"
-      ? "max-w-sm"
+      ? styles["size-sm"]
       : size === "lg"
-        ? "max-w-4xl"
+        ? styles["size-lg"]
         : size === "xl"
-          ? "max-w-7xl"
-          : "max-w-md";
+          ? styles["size-xl"]
+          : styles["size-md"];
 
   const handleOverlayClick = (
     event: React.MouseEvent<HTMLDivElement, MouseEvent>
@@ -42,33 +45,34 @@ export const Dialog: React.FC<DialogProps> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[900] flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      onClick={handleOverlayClick}
-    >
+    <div className={styles.overlay} onClick={handleOverlayClick}>
       <div
-        className={`w-full ${maxWidthClass} rounded-lg bg-editor-surface shadow-xl border border-editor-border ${styles["dialog-surface"]}`}
+        className={clsx(
+          styles["dialog-surface"],
+          "dialog-surface-root",
+          sizeClass
+        )}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-editor-border">
-          <div className="flex items-center gap-4 flex-1">
+        <div className={styles.header}>
+          <div className={styles["header-main"]}>
             {title &&
               (typeof title === "string" ? (
-                <h2 className="text-sm font-semibold text-editor-text">
-                  {title}
-                </h2>
+                <h2 className={styles["title-text"]}>{title}</h2>
               ) : (
-                <div className="flex items-center gap-2">{title}</div>
+                <div className={styles["title-wrapper"]}>{title}</div>
               ))}
-            {headerAction && <div className="ml-auto mr-2">{headerAction}</div>}
+            {headerAction && (
+              <div className={styles["header-action"]}>{headerAction}</div>
+            )}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-editor-text-muted hover:text-editor-text hover:bg-editor-surface-muted rounded-full transition-colors"
+            className={styles["close-button"]}
             aria-label="Close dialog"
           >
             <svg
-              className="w-4 h-4"
+              className={styles["close-icon"]}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -83,13 +87,9 @@ export const Dialog: React.FC<DialogProps> = ({
           </button>
         </div>
 
-        <div className="max-h-[80vh] overflow-y-auto px-4 py-3">{children}</div>
+        <div className={styles.content}>{children}</div>
 
-        {footer && (
-          <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-editor-border">
-            {footer}
-          </div>
-        )}
+        {footer && <div className={styles.footer}>{footer}</div>}
       </div>
     </div>
   );
