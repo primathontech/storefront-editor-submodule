@@ -2,6 +2,7 @@
 
 import { sectionRegistry } from "@/app/editor/schemas/section-registry";
 import { widgetRegistry } from "@/cms/schemas/widget-registry";
+import { COMMON_WIDGETS } from "@/constants/theme-constants";
 import { TranslationService } from "@/lib/i18n/translation-service";
 import React, { useCallback, useMemo } from "react";
 import { useRightSidebarWidth } from "../../context/RightSidebarWidthContext";
@@ -69,6 +70,9 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   const selectedWidgetSchema = useMemo(() => {
     return selectedWidget ? widgetRegistry[selectedWidget.type] || null : null;
   }, [selectedWidget]);
+
+  const isCustomHtmlWidget =
+    selectedWidgetSchema?.type === COMMON_WIDGETS.CUSTOM_HTML;
 
   // Handlers for settings changes
   const handleSectionSettingChange = useCallback(
@@ -166,8 +170,10 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
             />
 
             {/* Section Settings */}
-            {selectedSection && selectedSectionSchema && (
-              <>
+            {selectedSection &&
+              selectedSectionSchema &&
+              // For Custom HTML widget, hide section-level settings entirely
+              !isCustomHtmlWidget && (
                 <DynamicForm
                   schema={convertSchemaToFormSchema(
                     selectedSectionSchema.settingsSchema
@@ -177,9 +183,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                   translationService={translationService}
                   sectionId={selectedSectionId || undefined}
                 />
-                <br />
-              </>
-            )}
+              )}
 
             {/*
                 Legacy DataSourceEditor usage (kept as a reference for future reintroduction).
