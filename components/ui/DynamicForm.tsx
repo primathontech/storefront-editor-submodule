@@ -1,7 +1,6 @@
 "use client";
 
 import { TranslationService } from "@/lib/i18n/translation-service";
-import { Label } from "@/ui/atomic";
 import * as React from "react";
 import {
   translationUtils,
@@ -15,7 +14,6 @@ import styles from "./DynamicForm.module.css";
 import { FAQInput } from "./FAQInput";
 import { HtmlInput } from "./HtmlInput";
 import { ImageInput } from "./ImageInput";
-import { Input } from "./Input";
 import { ObjectArrayInput } from "./ObjectArrayInput";
 import { ResponsiveSpacingInput } from "./ResponsiveSpacingInput";
 import { RichTextInput } from "./RichTextInput";
@@ -178,24 +176,21 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
 
         case "number":
           return (
-            <FieldWrapper
-              fieldHelperText={fieldHelperText}
-              fieldError={fieldError}
-            >
-              <Label className="block text-xs font-medium mb-1 text-gray-600">
-                {fieldLabel}
-              </Label>
-              <Input
+            <FieldWrapper fieldHelperText={undefined} fieldError={fieldError}>
+              <DesignInput
+                label={fieldLabel}
                 type="number"
-                size="sm"
+                size="md"
                 value={value}
                 onChange={(e) => handleChange(Number(e.target.value))}
                 min={fieldSchema.min}
                 max={fieldSchema.max}
                 step={fieldSchema.step}
                 disabled={fieldDisabled}
-                error={fieldError}
                 placeholder={fieldSchema.placeholder}
+                helperText={!fieldError ? fieldHelperText : undefined}
+                error={fieldError ? fieldHelperText : undefined}
+                fullWidth
               />
             </FieldWrapper>
           );
@@ -479,7 +474,6 @@ const DynamicForm = React.forwardRef<HTMLDivElement, DynamicFormProps>(
     return (
       <div
         className={cn(
-          "space-y-3",
           hasHtmlField && "flex flex-col flex-1 min-h-0",
           className
         )}
