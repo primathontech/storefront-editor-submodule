@@ -8,6 +8,7 @@ import { EditorHeaderShimmer } from "../components/ui/EditorHeaderShimmer";
 import { RightSidebarWidthProvider } from "../context/RightSidebarWidthContext";
 import { api } from "../services/api";
 import { useEditorState } from "../stores/useEditorState";
+import styles from "./page.module.css";
 
 const EditorHeader2 = dynamic(() => import("../components/ui/EditorHeader2"), {
   ssr: false,
@@ -80,14 +81,12 @@ export default function UnifiedEditorPage() {
   // Show loading while initializing
   if (authState.isValid === null) {
     return (
-      <div className="flex flex-col h-screen items-center justify-center bg-[#F8F8F8]">
-        <div className="flex items-end gap-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mb-4"></div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">
-            Loading...
-          </h3>
+      <div className={styles.fullScreenCentered}>
+        <div className={styles.loadingRow}>
+          <div className={styles.spinner}></div>
+          <h3 className={styles.heading}>Loading...</h3>
         </div>
-        <p className="text-gray-500">
+        <p className={styles.paragraph}>
           Please wait while we prepare your workspace.
         </p>
       </div>
@@ -97,13 +96,11 @@ export default function UnifiedEditorPage() {
   // Show error if validation failed
   if (!authState.isValid) {
     return (
-      <div className="flex flex-col h-screen items-center justify-center bg-[#F8F8F8]">
-        <div className="text-center">
-          <div className="text-gray-400 text-6xl mb-4">❌</div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">
-            Invalid Theme Code
-          </h3>
-          <p className="text-gray-500">
+      <div className={styles.fullScreenCentered}>
+        <div className={styles.textCenter}>
+          <div className={styles.largeIcon}>❌</div>
+          <h3 className={styles.heading}>Invalid Theme Code</h3>
+          <p className={styles.paragraph}>
             The theme code "{params.id}" is not valid
           </p>
         </div>
@@ -178,7 +175,7 @@ export default function UnifiedEditorPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#F8F8F8]">
+    <div className={styles.mainContainer}>
       <EditorHeader2
         theme={theme}
         onSave={handleSave}
@@ -196,13 +193,11 @@ export default function UnifiedEditorPage() {
           )}
         </RightSidebarWidthProvider>
       ) : (
-        <div className="flex-1 flex items-center justify-center bg-[#F8F8F8]">
-          <div className="text-center">
-            <div className="text-gray-400 text-6xl mb-4">📄</div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              No Template Selected
-            </h3>
-            <p className="text-gray-500">
+        <div className={styles.emptyStateContainer}>
+          <div className={styles.textCenter}>
+            <div className={styles.largeIcon}>📄</div>
+            <h3 className={styles.heading}>No Template Selected</h3>
+            <p className={styles.paragraph}>
               Please select a template from the header to start editing
             </p>
           </div>

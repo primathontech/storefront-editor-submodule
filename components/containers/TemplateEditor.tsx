@@ -17,6 +17,7 @@ import {
 import { translatePageConfig } from "../../utils/page-config-translator";
 import BuilderToolbar from "../ui/BuilderToolbar";
 import { SettingsSidebar } from "../ui/SettingsSidebar";
+import editorStyles from "./TemplateEditor.module.css";
 
 // Import widget registry setup to ensure widgets are registered
 import "@/core/widget-registry-setup";
@@ -330,16 +331,16 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
   // ✅ Conditional returns AFTER all hooks
   if (!pageConfig) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading template...</div>
+      <div className={editorStyles.loadingContainer}>
+        <div className={editorStyles.loadingText}>Loading template...</div>
       </div>
     );
   }
 
   if (!translationService) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading translations...</div>
+      <div className={editorStyles.loadingContainer}>
+        <div className={editorStyles.loadingText}>Loading translations...</div>
       </div>
     );
   }
@@ -404,8 +405,8 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
               {pageData ? (
                 renderedLayout
               ) : (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-gray-500">
+                <div className={styles.loadingContainer}>
+                  <div className={styles.loadingText}>
                     {isLoadingData ? "Loading data..." : "Loading preview..."}
                   </div>
                 </div>
