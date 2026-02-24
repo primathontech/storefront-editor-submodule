@@ -1,0 +1,28 @@
+
+
+.label {
+  font-family: var(
+    --font-inter,
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif
+  );
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  color: #333333;
+  margin: 0;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+

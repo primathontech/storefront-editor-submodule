@@ -1,4 +1,6 @@
 import React from "react";
+import { Input as DesignInput } from "./design-system";
+import styles from "./ImageInput.module.css";
 
 export interface ImageInputProps {
   value: { src: string; alt: string };
@@ -13,24 +15,32 @@ export const ImageInput: React.FC<ImageInputProps> = ({
   label,
   disabled,
 }) => (
-  <div style={{ marginBottom: "1rem" }}>
-    {label && <label style={{ fontWeight: 500 }}>{label}</label>}
-    <input
-      type="text"
-      placeholder="Image URL"
-      value={value.src}
-      disabled={disabled}
-      onChange={(e) => onChange({ ...value, src: e.target.value })}
-      style={{ width: "100%", marginBottom: 4 }}
-    />
-    <input
-      type="text"
-      placeholder="Alt text"
-      value={value.alt}
-      disabled={disabled}
-      onChange={(e) => onChange({ ...value, alt: e.target.value })}
-      style={{ width: "100%" }}
-    />
-    {/* Future: Add upload button here */}
+  <div className={styles.root}>
+    {label && <span className={styles.label}>{label}</span>}
+
+    <div className={styles.fields}>
+      <DesignInput
+        label="Image URL"
+        labelVariant="subtle"
+        type="text"
+        size="md"
+        value={value.src}
+        onChange={(e) => onChange({ ...value, src: e.target.value })}
+        disabled={disabled}
+        placeholder="Image URL"
+        fullWidth
+      />
+      <DesignInput
+        label="Alt text"
+        labelVariant="subtle"
+        type="text"
+        size="md"
+        value={value.alt}
+        onChange={(e) => onChange({ ...value, alt: e.target.value })}
+        disabled={disabled}
+        placeholder="Alt text"
+        fullWidth
+      />
+    </div>
   </div>
 );
