@@ -40,8 +40,8 @@ export default function UnifiedEditorPage() {
     error?: string;
   }>({ isValid: null });
   const [theme, setTheme] = useState<any>(null);
-  const [templateMeta, setTemplateMeta] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const { templateMeta, setTemplateMeta } = useEditorState();
 
   useEffect(() => {
     const validateAuth = async () => {
@@ -168,21 +168,9 @@ export default function UnifiedEditorPage() {
     }
   };
 
-  const handleTemplateChange = (nextTemplateMeta: any) => {
-    // Reset logic is now handled by resetEditorState in the store
-    // This callback only needs to update the local templateMeta state
-    setTemplateMeta(nextTemplateMeta);
-  };
-
   return (
     <div className={styles.mainContainer}>
-      <EditorHeader2
-        theme={theme}
-        onSave={handleSave}
-        isSaving={isSaving}
-        selectedTemplateId={templateMeta?.id || null}
-        onTemplateChange={handleTemplateChange}
-      />
+      <EditorHeader2 theme={theme} onSave={handleSave} isSaving={isSaving} />
 
       {templateMeta ? (
         <RightSidebarWidthProvider>

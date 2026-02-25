@@ -17,8 +17,6 @@ interface EditorHeader2Props {
   theme?: any;
   onSave?: () => void;
   isSaving?: boolean;
-  selectedTemplateId?: string | null;
-  onTemplateChange?: (templateMeta: any) => void;
 }
 
 // Feature flag: only save to API when explicitly enabled
@@ -31,23 +29,19 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
   theme,
   onSave,
   isSaving = false,
-  selectedTemplateId,
-  onTemplateChange,
 }) => {
   const {
     saveTranslations,
     isSaving: isTranslationSaving,
     hasUnsavedChanges,
   } = useDualTranslationStore();
-  const { device, setDevice, mode, setMode, validateAllHtml } =
+  const { device, setDevice, mode, setMode, validateAllHtml, templateMeta } =
     useEditorState();
 
   const [isValidating, setIsValidating] = useState(false);
   const { addToast } = useToast();
 
-  const selectedTemplate = theme?.templateStructure
-    ?.flatMap((group: any) => group.templates || [])
-    .find((template: any) => template.id === selectedTemplateId);
+  const selectedTemplate = templateMeta;
 
   const handleSave = async () => {
     // Validate all HTML before saving
@@ -137,11 +131,7 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
       {/* Center - Template Dropdown and Device Controls */}
       <div className={styles["center-container"]}>
         <div className={styles["template-dropdown-wrapper"]}>
-          <TemplateSwitchDropdown
-            theme={theme}
-            selectedTemplateId={selectedTemplateId}
-            onTemplateChange={onTemplateChange}
-          />
+          <TemplateSwitchDropdown theme={theme} />
         </div>
       </div>
 

@@ -1,14 +1,13 @@
-import { create } from "zustand";
-import { devtools } from "zustand/middleware";
-import { nanoid } from "nanoid";
 import { sectionRegistry } from "@/app/editor/schemas/section-registry";
 import { widgetRegistry } from "@/cms/schemas/widget-registry";
-import { availableSectionsRegistry } from "@/registries/available-sections-registry";
-import { useDualTranslationStore } from "./dualTranslationStore";
-import { processSectionWidgets } from "../utils/section-translation-utils";
-import { translationUtils } from "./dualTranslationStore";
-import { DEFAULT_BREAKPOINTS } from "@/lib/page-builder/models/responsive-types";
 import { COMMON_WIDGETS } from "@/constants/theme-constants";
+import { DEFAULT_BREAKPOINTS } from "@/lib/page-builder/models/responsive-types";
+import { availableSectionsRegistry } from "@/registries/available-sections-registry";
+import { nanoid } from "nanoid";
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import { processSectionWidgets } from "../utils/section-translation-utils";
+import { useDualTranslationStore } from "./dualTranslationStore";
 
 // Widget to Data Source mapping
 const WIDGET_DATA_SOURCE_MAP: Record<string, string> = {
@@ -49,8 +48,8 @@ export interface EditorState {
   pageConfig: any | null;
   pendingPageConfig: any | null;
   pageData: any | null;
+  templateMeta: any | null;
   themeId: string; // Add themeId to state
-  templateId: string | null; // Template ID for translation namespace
   routeContext: any; // Add routeContext to state
   pageDataStale: boolean;
 
@@ -70,8 +69,8 @@ export interface EditorState {
   setPageConfig: (config: any) => void;
   setPendingPageConfig: (config: any | null) => void;
   updatePageConfig: (updater: (prev: any) => any) => void;
+  setTemplateMeta: (templateMeta: any | null) => void;
   setThemeId: (themeId: string) => void; // Add setThemeId action
-  setTemplateId: (templateId: string | null) => void; // Add setTemplateId action
   setRouteContext: (context: any) => void; // Add setRouteContext action
   updateRouteHandle: (handle: string) => void; // Add updateRouteHandle action
 
@@ -142,8 +141,8 @@ export const useEditorState = create<EditorState>()(
       pendingPageConfig: null,
       pageData: null,
       pageDataStale: false,
+      templateMeta: null,
       themeId: null, // Default theme
-      templateId: null, // Template ID
       routeContext: null, // Default route context
       selectedSectionId: null,
       selectedWidgetId: null,
@@ -178,12 +177,12 @@ export const useEditorState = create<EditorState>()(
         set({ pageDataStale: stale });
       },
 
-      setThemeId: (themeId) => {
-        set({ themeId });
+      setTemplateMeta: (templateMeta) => {
+        set({ templateMeta });
       },
 
-      setTemplateId: (templateId) => {
-        set({ templateId });
+      setThemeId: (themeId) => {
+        set({ themeId });
       },
 
       setRouteContext: (context) => {
@@ -279,7 +278,9 @@ export const useEditorState = create<EditorState>()(
         try {
           const state = get();
           const pageConfig = state.pageConfig;
-          if (!pageConfig?.sections) return;
+          if (!pageConfig?.sections) {
+            return;
+          }
 
           const { validateHtmlContent } =
             await import("../utils/htmlValidation");
@@ -433,7 +434,7 @@ export const useEditorState = create<EditorState>()(
         // Process translations: remap keys and create translations
         const editorState = get();
         const translationStore = useDualTranslationStore.getState();
-        const templateId = editorState.templateId;
+        const templateId = editorState.templateMeta?.id || null;
         const uniqueSectionKey = sectionId.replace(/-/g, "_");
 
         // Process template-specific sections (common sections use existing common.* keys)
@@ -552,7 +553,7 @@ export const useEditorState = create<EditorState>()(
           // Remove section translations
           const editorState = get();
           const translationStore = useDualTranslationStore.getState();
-          const templateId = editorState.templateId;
+          const templateId = editorState.templateMeta?.id;
           if (templateId) {
             translationStore.removeSectionTranslations(sectionId, templateId);
           }

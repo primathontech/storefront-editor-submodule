@@ -6,16 +6,12 @@ import { Dropdown, type DropdownOptionGroup } from "./dropdown/Dropdown";
 
 interface TemplateSwitchDropdownProps {
   theme?: any;
-  selectedTemplateId?: string | null;
-  onTemplateChange?: (templateMeta: any) => void;
 }
 
 export const TemplateSwitchDropdown: React.FC<TemplateSwitchDropdownProps> = ({
   theme,
-  selectedTemplateId,
-  onTemplateChange,
 }) => {
-  const { resetEditorState } = useEditorState();
+  const { resetEditorState, templateMeta, setTemplateMeta } = useEditorState();
 
   // Convert theme structure to dropdown option groups
   const optionGroups: DropdownOptionGroup[] = useMemo(() => {
@@ -56,7 +52,7 @@ export const TemplateSwitchDropdown: React.FC<TemplateSwitchDropdownProps> = ({
     const foundTemplate = findTemplate(nextTemplateId);
     if (foundTemplate) {
       resetEditorState();
-      onTemplateChange?.(foundTemplate);
+      setTemplateMeta(foundTemplate);
     }
   };
 
@@ -66,7 +62,7 @@ export const TemplateSwitchDropdown: React.FC<TemplateSwitchDropdownProps> = ({
 
   return (
     <Dropdown
-      value={selectedTemplateId || ""}
+      value={templateMeta?.id || ""}
       onChange={handleSelectChange}
       groups={optionGroups}
       placeholder="Select template..."
