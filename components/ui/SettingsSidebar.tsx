@@ -133,10 +133,10 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 
   const getTitle = () => {
     if (selectedWidget) {
-      return `${selectedWidget.name || selectedWidgetSchema?.name} Settings`;
+      return `${selectedWidget.name || selectedWidgetSchema?.name}`;
     }
     if (selectedSection) {
-      return `${selectedSectionSchema?.name} Settings`;
+      return `${selectedSectionSchema?.name}`;
     }
     return "Settings";
   };
