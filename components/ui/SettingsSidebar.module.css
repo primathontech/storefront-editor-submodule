@@ -1,6 +1,5 @@
 /* Settings Sidebar Styles */
 
-
 .title {
   font-family: var(
     --font-inter,
@@ -77,4 +76,3 @@
   line-height: 1.5;
   color: #666666;
 }
-

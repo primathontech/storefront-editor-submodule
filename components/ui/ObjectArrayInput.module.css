@@ -28,7 +28,7 @@
 .items {
   display: flex;
   flex-direction: column;
-  gap: 6px; 
+  gap: 6px;
 }
 
 .itemCard {
@@ -134,6 +134,3 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
-
-
-

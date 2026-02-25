@@ -19,7 +19,7 @@ export type { DropdownOption, DropdownProps } from "./Dropdown/Dropdown";
 
 export {
   Sidebar as DesignSidebar,
-  SidebarHeader as DesignSidebarHeader
+  SidebarHeader as DesignSidebarHeader,
 } from "./Sidebar/Sidebar";
 
 export { Input } from "./Input/Input";
@@ -32,9 +32,8 @@ export { SpacingFields } from "./SpacingFields/SpacingFields";
 export type {
   SpacingFieldsProps,
   SpacingSide,
-  SpacingValue
+  SpacingValue,
 } from "./SpacingFields/SpacingFields";
 
 export { Modal } from "./Modal/Modal";
 export type { ModalProps, ModalSize } from "./Modal/Modal";
-
