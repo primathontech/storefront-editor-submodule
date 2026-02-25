@@ -353,6 +353,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
           currentLocale={language}
           supportedLanguages={templateMeta?.supportedLanguages || ["en"]}
           onRouteHandleChange={updateRouteHandle}
+          pageTitle={templateMeta?.name || templateMeta?.id || "Untitled Page"}
           onLocaleChange={async (newLocale) => {
             setLanguage(newLocale);
             if (templateMeta?.id && themeId) {

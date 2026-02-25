@@ -31,6 +31,7 @@ interface BuilderToolbarProps {
   onLocaleChange: (locale: string) => void;
   supportedLanguages?: string[];
   onRouteHandleChange: (handle: string) => void;
+  pageTitle?: string;
 }
 
 export default function BuilderToolbar({
@@ -39,6 +40,7 @@ export default function BuilderToolbar({
   onLocaleChange,
   supportedLanguages = ["en"], // Default to English if not provided
   onRouteHandleChange,
+  pageTitle,
 }: BuilderToolbarProps) {
   const {
     selectedWidgetId,
@@ -180,7 +182,9 @@ export default function BuilderToolbar({
     <>
       <DesignSidebar side="left">
         <DesignSidebarHeader>
-          <span className={styles["page-title"]}>Home Page</span>
+          <span className={styles["page-title"]}>
+            {pageTitle || "Untitled Page"}
+          </span>
         </DesignSidebarHeader>
 
         {/* Route Handle Input */}
