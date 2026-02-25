@@ -8,6 +8,7 @@ import { ChatMessage, ChatRole, Conversation } from "../../models/chat-types";
 import { EditorAPI } from "../../services/api";
 import { htmlChatService } from "../../services/chat/chat-service";
 import { useEditorState } from "../../stores/useEditorState";
+import { validateHtmlContent } from "../../utils/htmlValidation";
 import styles from "./HtmlInput.module.css";
 import { SparkleIcon } from "./SectionLibraryDialog";
 import { HtmlErrorIcon } from "./icons/HtmlErrorIcon";
@@ -71,16 +72,27 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
   const recordedChunksRef = useRef<Blob[]>([]);
   const processedPendingPromptRef = useRef<string | null>(null);
   const { setWidth } = useRightSidebarWidth();
-  const { htmlValidationErrors } = useEditorState();
+  const {
+    htmlValidationErrors,
+    setHtmlValidationErrors,
+    clearHtmlValidationErrors,
+  } = useEditorState();
 
   // Get errors for this section from store (single source of truth)
   const validationErrors = sectionId
     ? htmlValidationErrors[sectionId] || []
     : [];
 
-  // Adjust sidebar width based on view mode: wider for code view, narrower for chat view
+  // Adjust sidebar width based on view mode while this widget is active:
+  // - chat view: 340px
+  // - code view: 600px
+  // On unmount, always reset to 340px so other widgets see the default width.
   useEffect(() => {
-    setWidth(isCodeView ? 600 : 400);
+    setWidth(isCodeView ? 600 : 340);
+
+    return () => {
+      setWidth(340);
+    };
   }, [isCodeView, setWidth]);
 
   // Core send message function that accepts prompt text (and optional image override)
@@ -138,6 +150,15 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
         setConversation(updatedConversation);
 
         if (html) {
+          // When AI updates the HTML, keep validation behavior consistent
+          // with manual edits:
+          // 1) clear previous errors immediately
+          // 2) re-validate the new HTML and store fresh errors
+          if (sectionId) {
+            clearHtmlValidationErrors(sectionId);
+            const errors = await validateHtmlContent(html);
+            setHtmlValidationErrors(sectionId, errors);
+          }
           onChange(html);
         }
       } catch (error) {

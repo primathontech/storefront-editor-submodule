@@ -45,10 +45,9 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
   const [isValidating, setIsValidating] = useState(false);
   const { addToast } = useToast();
 
-  const selectedTemplate =
-    theme?.templateStructure
-      ?.flatMap((group: any) => group.templates || [])
-      .find((template: any) => template.isHome === true) || null;
+  const selectedTemplate = theme?.templateStructure
+    ?.flatMap((group: any) => group.templates || [])
+    .find((template: any) => template.id === selectedTemplateId);
 
   const handleSave = async () => {
     // Validate all HTML before saving
@@ -186,7 +185,7 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
             disabled={isSaveDisabled}
             loading={isValidating || isSaving || isTranslationSaving}
             title={saveButtonTitle}
-            style={{ width: "100px" }}
+            style={{ minWidth: "100px" }}
           >
             {isValidating
               ? "Validating..."
