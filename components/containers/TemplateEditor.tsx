@@ -338,9 +338,14 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     );
   }
 
+  const isPreviewMode = mode === "preview";
+  // In both preview mode and explicit fullscreen device mode,
+  // we want a canvas-only layout (no side panels).
+  const isCanvasOnlyLayout = isPreviewMode || device === "fullscreen";
+
   return (
     <div className="flex flex-1 min-h-0">
-      {device !== "fullscreen" && (
+      {!isCanvasOnlyLayout && (
         <BuilderToolbar
           pageConfig={pageConfig}
           currentLocale={language}
@@ -410,7 +415,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
         </Frame>
       </div>
       {/* Right Settings Sidebar */}
-      {device !== "fullscreen" && showSettingsDrawer && (
+      {!isCanvasOnlyLayout && showSettingsDrawer && (
         <SettingsSidebar translationService={translationService} />
       )}
     </div>
