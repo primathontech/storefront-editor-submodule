@@ -1,1 +1,1 @@
-Editor Version: v2.1.1
+Editor Version: v2.2.0
