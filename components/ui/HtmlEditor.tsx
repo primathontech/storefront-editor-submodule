@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
+import React, { useCallback, useEffect, useRef } from "react";
 import { useEditorState } from "../../stores/useEditorState";
 import { validateHtmlContent } from "../../utils/htmlValidation";
 
@@ -54,7 +54,6 @@ export const HtmlEditorWithValidation: React.FC<
 
   return (
     <Editor
-      height="650px"
       language="html"
       value={value}
       onChange={(val) => {

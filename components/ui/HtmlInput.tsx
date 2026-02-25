@@ -10,6 +10,7 @@ import { htmlChatService } from "../../services/chat/chat-service";
 import { useEditorState } from "../../stores/useEditorState";
 import styles from "./HtmlInput.module.css";
 import { SparkleIcon } from "./SectionLibraryDialog";
+import { HtmlErrorIcon } from "./icons/HtmlErrorIcon";
 import {
   ImageFileInput,
   ImagePreview,
@@ -325,7 +326,7 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
       {/* Body: either Chat view or Code view */}
       <div className={styles.body}>
         {isCodeView ? (
-          <>
+          <div className={styles["code-view-wrapper"]}>
             <div className={styles["code-view-container"]}>
               <HtmlEditorWithValidation
                 value={value}
@@ -337,17 +338,29 @@ export const HtmlInput: React.FC<HtmlInputProps> = ({
 
             {validationErrors.length > 0 && (
               <div className={styles["error-container"]}>
-                <strong>Errors:</strong>
+                <div className={styles["error-header"]}>
+                  <span className={styles["error-icon-wrapper"]}>
+                    <HtmlErrorIcon />
+                  </span>
+                  <div className={styles["error-text-group"]}>
+                    <div className={styles["error-text-main"]}>Errors</div>
+                  </div>
+                </div>
                 <ul className={styles["error-list"]}>
                   {validationErrors.map((e, idx) => (
-                    <li key={idx}>
-                      Line {e.line}, Column {e.column}: {e.message}
+                    <li key={idx} className={styles["error-list-item"]}>
+                      <span className={styles["error-location"]}>
+                        Line {e.line}, Col {e.column}
+                      </span>
+                      <span className={styles["error-message"]}>
+                        {e.message}
+                      </span>
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-          </>
+          </div>
         ) : (
           <>
             <div className={styles["chat-container"]}>
