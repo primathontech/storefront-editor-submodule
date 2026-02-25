@@ -1,0 +1,73 @@
+"use client";
+
+import React, { useMemo } from "react";
+import { useEditorState } from "../../stores/useEditorState";
+import { Dropdown, type DropdownOptionGroup } from "./dropdown/Dropdown";
+
+interface TemplateSwitchDropdownProps {
+  theme?: any;
+}
+
+export const TemplateSwitchDropdown: React.FC<TemplateSwitchDropdownProps> = ({
+  theme,
+}) => {
+  const { resetEditorState, templateMeta, setTemplateMeta } = useEditorState();
+
+  // Convert theme structure to dropdown option groups
+  const optionGroups: DropdownOptionGroup[] = useMemo(() => {
+    if (!theme?.templateStructure?.length) {
+      return [];
+    }
+
+    return theme.templateStructure.map((group: any) => ({
+      label: group.name,
+      options:
+        group.templates?.map((template: any) => ({
+          value: template.id,
+          label: template.name,
+        })) || [],
+    }));
+  }, [theme]);
+
+  // Helper to find template by ID
+  const findTemplate = (templateId: string) => {
+    if (!theme?.templateStructure) {
+      return null;
+    }
+
+    for (const group of theme.templateStructure) {
+      const found = group.templates?.find((t: any) => t.id === templateId);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  };
+
+  const handleSelectChange = (nextTemplateId: string) => {
+    if (!nextTemplateId) {
+      return;
+    }
+
+    const foundTemplate = findTemplate(nextTemplateId);
+    if (foundTemplate) {
+      resetEditorState();
+      setTemplateMeta(foundTemplate);
+    }
+  };
+
+  if (!theme?.templateStructure?.length || optionGroups.length === 0) {
+    return null;
+  }
+
+  return (
+    <Dropdown
+      value={templateMeta?.id || ""}
+      onChange={handleSelectChange}
+      groups={optionGroups}
+      placeholder="Select template..."
+      fullWidth
+      variant="ghost"
+    />
+  );
+};

@@ -1,0 +1,207 @@
+/* Editor Design Tokens - Base values for all components */
+
+/* ============================================
+   Colors
+   ============================================ */
+
+/* Primary Colors */
+.editor-color-primary {
+  color: #2563eb;
+}
+
+.editor-color-primary-bg {
+  background-color: #2563eb;
+}
+
+.editor-color-primary-hover {
+  background-color: #1d4ed8;
+}
+
+/* Success Colors */
+.editor-color-success {
+  color: #16a34a;
+}
+
+.editor-color-success-bg {
+  background-color: #16a34a;
+}
+
+.editor-color-success-hover {
+  background-color: #15803d;
+}
+
+/* Warning/Orange Colors */
+.editor-color-warning {
+  color: #f97316;
+}
+
+.editor-color-warning-bg {
+  background-color: #f97316;
+}
+
+/* Text Colors */
+.editor-color-text {
+  color: #0f172a;
+}
+
+.editor-color-text-muted {
+  color: #6b7280;
+}
+
+.editor-color-text-subtle {
+  color: #9ca3af;
+}
+
+.editor-color-text-inverse {
+  color: #ffffff;
+}
+
+/* Background Colors */
+.editor-color-bg {
+  background-color: #ffffff;
+}
+
+.editor-color-bg-muted {
+  background-color: #f3f4f6;
+}
+
+.editor-color-bg-subtle {
+  background-color: #f9fafb;
+}
+
+/* Border Colors */
+.editor-color-border {
+  border-color: #e5e7eb;
+}
+
+.editor-color-border-subtle {
+  border-color: #d1d5db;
+}
+
+/* ============================================
+   Spacing
+   ============================================ */
+.editor-spacing-xs {
+  padding: 4px;
+}
+
+.editor-spacing-sm {
+  padding: 8px;
+}
+
+.editor-spacing-md {
+  padding: 16px;
+}
+
+.editor-spacing-lg {
+  padding: 24px;
+}
+
+.editor-spacing-xl {
+  padding: 32px;
+}
+
+/* Gap utilities */
+.editor-gap-xs {
+  gap: 4px;
+}
+
+.editor-gap-sm {
+  gap: 8px;
+}
+
+.editor-gap-md {
+  gap: 16px;
+}
+
+.editor-gap-lg {
+  gap: 24px;
+}
+
+/* ============================================
+   Typography
+   ============================================ */
+.editor-font-body {
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+
+.editor-font-heading {
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+
+.editor-text-xs {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.editor-text-sm {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.editor-text-base {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.editor-text-lg {
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.editor-font-normal {
+  font-weight: 400;
+}
+
+.editor-font-medium {
+  font-weight: 500;
+}
+
+.editor-font-semibold {
+  font-weight: 600;
+}
+
+/* ============================================
+   Border Radius
+   ============================================ */
+.editor-radius-sm {
+  border-radius: 4px;
+}
+
+.editor-radius-md {
+  border-radius: 6px;
+}
+
+.editor-radius-lg {
+  border-radius: 8px;
+}
+
+.editor-radius-full {
+  border-radius: 999px;
+}
+
+/* ============================================
+   Transitions
+   ============================================ */
+.editor-transition {
+  transition: all 0.15s ease;
+}
+
+.editor-transition-colors {
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}

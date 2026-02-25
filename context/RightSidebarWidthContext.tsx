@@ -12,7 +12,7 @@ const RightSidebarWidthContext = createContext<
 export const RightSidebarWidthProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
-  const [width, setWidth] = useState(400); // Default 400px for settings sidebar
+  const [width, setWidth] = useState(340); // Default 340px for settings sidebar
 
   return (
     <RightSidebarWidthContext.Provider value={{ width, setWidth }}>

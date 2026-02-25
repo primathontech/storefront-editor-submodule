@@ -1,4 +1,4 @@
-.gradient-dialog-surface :global(.rounded-lg) {
+.gradient-dialog-surface :global(.dialog-surface-root) {
   --x: 50%;
   --y: 50%;
   width: 518px;
@@ -71,7 +71,7 @@
   }
 }
 
-.gradient-dialog-surface :global(.rounded-lg) > * {
+.gradient-dialog-surface :global(.dialog-surface-root) > * {
   pointer-events: all !important;
 }
 

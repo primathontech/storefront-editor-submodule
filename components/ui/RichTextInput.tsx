@@ -1,6 +1,9 @@
-import React, { useRef, useCallback, useState, useMemo } from "react";
-import { createPortal } from "react-dom";
+import { clsx } from "clsx";
 import dynamic from "next/dynamic";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Modal as DesignModal } from "./design-system";
+import styles from "./RichTextInput.module.css";
 
 // Import ReactQuill CSS
 import "react-quill/dist/quill.snow.css";
@@ -8,11 +11,7 @@ import "react-quill/dist/quill.snow.css";
 // Dynamically import ReactQuill to avoid SSR issues
 const ReactQuill = dynamic(() => import("react-quill"), {
   ssr: false,
-  loading: () => (
-    <div className="h-32 bg-gray-100 animate-pulse rounded">
-      Loading ReactQuill...
-    </div>
-  ),
+  loading: () => <div className={styles.loading}>Loading ReactQuill...</div>,
 });
 
 export interface RichTextInputProps {
@@ -23,16 +22,16 @@ export interface RichTextInputProps {
   placeholder?: string;
 }
 
-// Move Modal component outside to prevent recreation on every render
-const Modal = React.memo<{
-  value: string;
-  onChange: (value: string) => void;
-  onSave: () => void;
-  onCancel: () => void;
-  label?: string;
-  placeholder?: string;
-  disabled?: boolean;
-}>(({ value, onChange, onSave, onCancel, label, placeholder, disabled }) => {
+export const RichTextInput: React.FC<RichTextInputProps> = ({
+  value,
+  onChange,
+  label,
+  disabled = false,
+  placeholder = "Enter content...",
+}) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalValue, setModalValue] = useState(value);
+
   // Quill modules configuration - memoized to prevent recreation
   const modules = useMemo(
     () => ({
@@ -66,158 +65,6 @@ const Modal = React.memo<{
     ],
     []
   );
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        zIndex: 1000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: "white",
-          borderRadius: "8px",
-          width: "90%",
-          maxWidth: "1000px",
-          height: "85%",
-          display: "flex",
-          flexDirection: "column",
-          boxShadow:
-            "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-        }}
-      >
-        {/* Modal Header */}
-        <div
-          style={{
-            padding: "16px 24px",
-            borderBottom: "1px solid #e5e7eb",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "600" }}>
-            {label || "Edit Content"}
-          </h3>
-          <button
-            type="button"
-            onClick={onCancel}
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: "24px",
-              cursor: "pointer",
-              color: "#6b7280",
-            }}
-          >
-            ×
-          </button>
-        </div>
-
-        {/* Modal Content */}
-        <div
-          style={{
-            flex: 1,
-            padding: "24px",
-            display: "flex",
-            flexDirection: "column",
-            minHeight: 0,
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 0,
-              height: "100%",
-            }}
-            className="modal-quill-editor"
-          >
-            <ReactQuill
-              value={value}
-              onChange={onChange}
-              modules={modules}
-              formats={formats}
-              placeholder={placeholder}
-              readOnly={disabled}
-              theme="snow"
-              style={{
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Modal Footer */}
-        <div
-          style={{
-            padding: "16px 24px",
-            borderTop: "1px solid #e5e7eb",
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "12px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={onCancel}
-            style={{
-              padding: "8px 16px",
-              border: "1px solid #d1d5db",
-              borderRadius: "4px",
-              background: "white",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onSave}
-            style={{
-              padding: "8px 16px",
-              border: "none",
-              borderRadius: "4px",
-              background: "#3b82f6",
-              color: "white",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            Save Changes
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-Modal.displayName = "Modal";
-
-export const RichTextInput: React.FC<RichTextInputProps> = ({
-  value,
-  onChange,
-  label,
-  disabled = false,
-  placeholder = "Enter content...",
-}) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalValue, setModalValue] = useState(value);
 
   // Keep track of the last value to detect actual changes
   const lastValueRef = useRef<string>(value);
@@ -283,104 +130,63 @@ export const RichTextInput: React.FC<RichTextInputProps> = ({
 
   return (
     <>
-      <div style={{ marginBottom: "1rem" }}>
-        {label && (
-          <label
-            style={{
-              fontWeight: 500,
-              display: "block",
-              marginBottom: "0.5rem",
-            }}
-          >
-            {label}
-          </label>
-        )}
+      {/* Sidebar preview block */}
+      <div className={styles.sidebarBlock}>
+        <div className={styles.sidebarHeader}>
+          <span className={styles.sidebarLabel}>{label || "Full Text"}</span>
 
-        {/* Compact preview in sidebar */}
+          {!disabled && (
+            <button
+              type="button"
+              onClick={handleOpenModal}
+              className={styles.sidebarEditButton}
+            >
+              Edit Content
+            </button>
+          )}
+        </div>
+
+        {/* Compact preview */}
         <div
-          style={{
-            border: "1px solid #d1d5db",
-            borderRadius: "4px",
-            padding: "8px 12px",
-            minHeight: "40px",
-            backgroundColor: "#f9fafb",
-            cursor: disabled ? "not-allowed" : "pointer",
-            fontSize: "14px",
-            lineHeight: "1.4",
-            color: value ? "#374151" : "#9ca3af",
-          }}
+          className={clsx(
+            styles.sidebarPreview,
+            !value && styles.sidebarPreviewEmpty,
+            disabled
+              ? styles.sidebarPreviewDisabled
+              : styles.sidebarPreviewClickable
+          )}
           onClick={disabled ? undefined : handleOpenModal}
         >
           {getPreviewText(value)}
         </div>
-
-        {!disabled && (
-          <button
-            type="button"
-            onClick={handleOpenModal}
-            style={{
-              marginTop: "4px",
-              fontSize: "12px",
-              color: "#3b82f6",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              textDecoration: "underline",
-            }}
-          >
-            Edit content
-          </button>
-        )}
       </div>
 
       {/* Modal rendered at document body level */}
       {isModalOpen &&
         typeof document !== "undefined" &&
         createPortal(
-          <Modal
-            value={modalValue}
-            onChange={handleModalChange}
-            onSave={handleSaveModal}
-            onCancel={handleCancelModal}
-            label={label}
-            placeholder={placeholder}
-            disabled={disabled}
-          />,
+          <DesignModal
+            isOpen={isModalOpen}
+            onClose={handleCancelModal}
+            title={label || "Full Text"}
+            primaryActionLabel="Update"
+            onPrimaryAction={handleSaveModal}
+            size="lg"
+          >
+            <div className={styles.modalEditorWrapper}>
+              <ReactQuill
+                value={modalValue}
+                onChange={handleModalChange}
+                modules={modules}
+                formats={formats}
+                placeholder={placeholder}
+                readOnly={disabled}
+                theme="snow"
+              />
+            </div>
+          </DesignModal>,
           document.body
         )}
-
-      {/* Add CSS for ReactQuill */}
-      <style jsx global>{`
-        .modal-quill-editor .ql-container {
-          flex: 1;
-          min-height: 0;
-        }
-
-        .modal-quill-editor .ql-editor {
-          min-height: 200px;
-          font-size: 14px;
-          line-height: 1.6;
-        }
-
-        .modal-quill-editor .ql-toolbar {
-          border-top: 1px solid #ccc;
-          border-left: 1px solid #ccc;
-          border-right: 1px solid #ccc;
-          border-bottom: none;
-          border-radius: 4px 4px 0 0;
-        }
-
-        .modal-quill-editor .ql-container {
-          border: 1px solid #ccc;
-          border-top: none;
-          border-radius: 0 0 4px 4px;
-        }
-
-        .modal-quill-editor .ql-editor.ql-blank::before {
-          color: #9ca3af;
-          font-style: italic;
-        }
-      `}</style>
     </>
   );
 };

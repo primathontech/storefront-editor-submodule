@@ -1,13 +1,20 @@
+import { useToast } from "@/ui/context/toast/ToastContext";
 import React, { useState } from "react";
 import { useDualTranslationStore } from "../../stores/dualTranslationStore";
 import { useEditorState } from "../../stores/useEditorState";
-import { useToast } from "@/ui/context/toast/ToastContext";
+import { Button, IconButton } from "./design-system";
 import styles from "./EditorHeader2.module.css";
+import { EditIcon } from "./icons/EditIcon";
+import { HeaderHomeIcon } from "./icons/HeaderHomeIcon";
+import { HeaderMobileIcon } from "./icons/HeaderMobileIcon";
+import { HeaderMonitorIcon } from "./icons/HeaderMonitorIcon";
+import { HeaderStackedIcon } from "./icons/HeaderStackedIcon";
+import { HeaderTabletIcon } from "./icons/HeaderTabletIcon";
+import { PreviewIcon } from "./icons/PreviewIcon";
+import { TemplateSwitchDropdown } from "./TemplateSwitchDropdown";
 
 interface EditorHeader2Props {
   theme?: any;
-  selectedTemplateId?: string | null;
-  onTemplateChange?: (templateMeta: any) => void;
   onSave?: () => void;
   isSaving?: boolean;
 }
@@ -20,8 +27,6 @@ const isEditorChangesEnabled = () => {
 
 const EditorHeader2: React.FC<EditorHeader2Props> = ({
   theme,
-  selectedTemplateId,
-  onTemplateChange,
   onSave,
   isSaving = false,
 }) => {
@@ -30,32 +35,13 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
     isSaving: isTranslationSaving,
     hasUnsavedChanges,
   } = useDualTranslationStore();
-  const { device, setDevice, mode, setMode, validateAllHtml } =
+  const { device, setDevice, mode, setMode, validateAllHtml, templateMeta } =
     useEditorState();
 
   const [isValidating, setIsValidating] = useState(false);
   const { addToast } = useToast();
 
-  const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedTemplateId = e.target.value;
-    if (!selectedTemplateId || !theme || !onTemplateChange) {
-      return;
-    }
-
-    for (const group of theme.templateStructure) {
-      const foundTemplate = group.templates?.find(
-        (t: any) => t.id === selectedTemplateId
-      );
-      if (foundTemplate) {
-        onTemplateChange(foundTemplate);
-        break;
-      }
-    }
-  };
-
-  const selectedTemplate = theme?.templateStructure
-    ?.flatMap((group: any) => group.templates || [])
-    .find((template: any) => template.id === selectedTemplateId);
+  const selectedTemplate = templateMeta;
 
   const handleSave = async () => {
     // Validate all HTML before saving
@@ -88,10 +74,10 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
         // Handle template save
         onSave?.();
         // For dynamic templates, save to template-specific file
-        await saveTranslations(theme?.id, selectedTemplateId!);
+        await saveTranslations(theme?.id, selectedTemplate?.id);
       } else {
         // Handle translation save
-        await saveTranslations(theme?.id, selectedTemplateId!);
+        await saveTranslations(theme?.id, selectedTemplate?.id);
       }
     } catch (error) {
       console.error("Validation error:", error);
@@ -120,97 +106,83 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
       ? "Make some changes before saving"
       : "Save changes";
 
-  const DEVICES = ["desktop", "tablet", "mobile", "fullscreen"] as const;
-  const MODES = ["edit", "preview"] as const;
-
+  const DEVICES = [
+    { id: "desktop", label: "Desktop", Icon: HeaderMonitorIcon },
+    { id: "tablet", label: "Tablet", Icon: HeaderTabletIcon },
+    { id: "mobile", label: "Mobile", Icon: HeaderMobileIcon },
+    { id: "fullscreen", label: "Fullscreen", Icon: HeaderStackedIcon },
+  ] as const;
   return (
     <header className={styles.header}>
-      {/* Left side - Navigation and Theme Info */}
+      {/* Left side - Home icon + Theme name */}
       <div className={styles["left-container"]}>
-        <span className={styles["theme-name"]}>
-          Theme: {theme?.name || theme?.id}
-        </span>
-
-        {/* Template Dropdown */}
-        {theme?.templateStructure?.length > 0 && (
-          <div className={styles["template-container"]}>
-            <label
-              htmlFor="template-select"
-              className={styles["template-label"]}
-            >
-              Template:
-            </label>
-            <select
-              id="template-select"
-              className={styles["template-select"]}
-              value={selectedTemplateId || ""}
-              onChange={handleSelectChange}
-              aria-label="Select template to edit"
-            >
-              <option value="" disabled>
-                Select template...
-              </option>
-              {theme.templateStructure.map((group: any) => (
-                <optgroup key={group.id} label={`📁 ${group.name}`}>
-                  {group.templates?.map((template: any) => (
-                    <option key={template.id} value={template.id}>
-                      📄 {template.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          </div>
-        )}
+        <IconButton
+          icon={<HeaderHomeIcon />}
+          size="md"
+          variant="ghost"
+          shape="square"
+          aria-label="Back to themes"
+          title="Back to themes"
+        />
+        <div className={styles.divider} />
+        <span className={styles["theme-name"]}>{theme?.name || theme?.id}</span>
       </div>
 
-      {/* Right side - Device and Mode Controls */}
-      <div className={styles["right-container"]}>
-        {/* Unified Save Button */}
-        <button
-          onClick={handleSave}
-          disabled={isSaveDisabled}
-          className={styles["save-button"]}
-          title={saveButtonTitle}
-        >
-          {isValidating
-            ? "Validating..."
-            : isSaving || isTranslationSaving
-              ? "Saving..."
-              : "Save"}
-        </button>
+      {/* Center - Template Dropdown and Device Controls */}
+      <div className={styles["center-container"]}>
+        <div className={styles["template-dropdown-wrapper"]}>
+          <TemplateSwitchDropdown theme={theme} />
+        </div>
+      </div>
 
-        <div className={styles["button-group"]}>
-          {DEVICES.map((d) => (
-            <button
-              key={d}
+      {/* Right side - Preview/Edit toggle and Save Button */}
+      <div className={styles["right-container"]}>
+        <div className={styles["device-group"]}>
+          {DEVICES.map(({ id, label, Icon }) => (
+            <IconButton
+              key={id}
+              icon={<Icon />}
+              size="md"
+              variant="ghost"
+              shape="square"
+              onClick={() => setDevice(id as typeof device)}
+              aria-pressed={device === id}
+              aria-label={`Switch to ${label} view`}
+              title={`Switch to ${label} view`}
               className={`${styles["device-button"]} ${
-                device === d
+                device === id
                   ? styles["device-button-active"]
                   : styles["device-button-inactive"]
               }`}
-              onClick={() => setDevice(d)}
-              title={`Switch to ${d.charAt(0).toUpperCase() + d.slice(1)} view`}
-            >
-              {d.charAt(0).toUpperCase() + d.slice(1)}
-            </button>
+            />
           ))}
         </div>
-        <div className={styles["button-group"]}>
-          {MODES.map((m) => (
-            <button
-              key={m}
-              className={`${styles["mode-button"]} ${
-                mode === m
-                  ? styles["mode-button-active"]
-                  : styles["mode-button-inactive"]
-              }`}
-              onClick={() => setMode(m)}
-              title={`Switch to ${m.charAt(0).toUpperCase() + m.slice(1)} mode`}
-            >
-              {m.charAt(0).toUpperCase() + m.slice(1)}
-            </button>
-          ))}
+        <div className={styles["action-buttons-container"]}>
+          <Button
+            variant="secondary"
+            size="md"
+            leftIcon={mode === "preview" ? <EditIcon /> : <PreviewIcon />}
+            onClick={() => setMode(mode === "preview" ? "edit" : "preview")}
+            style={{ width: "122px" }}
+          >
+            {mode === "preview" ? "Edit" : "Preview"}
+          </Button>
+
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleSave}
+            disabled={isSaveDisabled}
+            loading={isValidating || isSaving || isTranslationSaving}
+            title={saveButtonTitle}
+            style={{ minWidth: "100px" }}
+          >
+            {isValidating
+              ? "Validating..."
+              : isSaving || isTranslationSaving
+                ? "Saving..."
+                : "Save"}
+          </Button>
         </div>
       </div>
     </header>

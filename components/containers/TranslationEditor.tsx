@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Input } from "@/ui/atomic";
-import { RichTextInput } from "../ui/RichTextInput";
-import { ArrayInput } from "../ui/ArrayInput";
-import { ObjectArrayInput } from "../ui/ObjectArrayInput";
-import LanguageSwitcher from "../ui/LanguageSwitcher";
-import { useDualTranslationStore } from "../../stores/dualTranslationStore";
-import { Locale } from "@/lib/i18n/types";
 import { TranslationProvider } from "@/lib/i18n/translation-context";
+import { Locale } from "@/lib/i18n/types";
+import React, { useEffect, useState } from "react";
+import { useDualTranslationStore } from "../../stores/dualTranslationStore";
+import { ArrayInput } from "../ui/ArrayInput";
+import { Input as DesignInput } from "../ui/design-system";
+import LanguageSwitcher from "../ui/LanguageSwitcher";
 import LazyTemplateLoader from "../ui/LazyTemplateLoader";
+import { ObjectArrayInput } from "../ui/ObjectArrayInput";
+import { RichTextInput } from "../ui/RichTextInput";
+import styles from "./TranslationEditor.module.css";
 
 interface TranslationEditorProps {
   templateMeta?: any;
@@ -164,7 +165,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
           <div
             key={sectionKey}
             data-section-key={sectionKey}
-            className="mb-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+            className={styles.sectionArray}
             style={{
               boxShadow: isFocused ? "0 0 0 2px #3b82f6" : undefined,
             }}
@@ -189,7 +190,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
           <div
             key={sectionKey}
             data-section-key={sectionKey}
-            className="mb-4 bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+            className={styles.sectionObjectArray}
             style={{
               boxShadow: isFocused ? "0 0 0 2px #3b82f6" : undefined,
             }}
@@ -209,67 +210,58 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
 
       // Handle regular flat inputs
       return (
-        <div
-          key={sectionKey}
-          data-section-key={sectionKey}
-          className="mb-2 bg-white rounded-lg shadow-sm border border-gray-200 p-2 hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center gap-4">
-            <div className="flex-grow">
-              {isRichText ? (
-                <RichTextInput
-                  value={String(value)}
-                  onChange={(newValue) => handleChange(path, newValue)}
-                  label={label}
-                  placeholder={`Enter content for ${label}`}
-                />
-              ) : (
-                <Input
-                  className="w-full focus:ring-2 focus:ring-blue-200"
-                  style={{
-                    background: "#f9fafb",
-                    border: "1px solid #e5e7eb",
-                    height: "1.5rem",
-                    padding: "1rem",
-                    fontSize: "1rem",
-                    boxShadow: isFocused ? "0 0 0 2px #3b82f6" : undefined,
-                  }}
+        <div key={sectionKey} className={styles.inputRow}>
+          <div className={styles.inputContainer}>
+            {isRichText ? (
+              <RichTextInput
+                key={sectionKey}
+                value={String(value)}
+                onChange={(newValue) => handleChange(path, newValue)}
+                label={label}
+                placeholder={`Enter content for ${label}`}
+              />
+            ) : (
+              <FieldWrapper>
+                <DesignInput
+                  // label={label}
+                  type="text"
+                  size="md"
                   value={String(value)}
                   onChange={(e) => handleChange(path, e.target.value)}
                   onFocus={() => setFocusedPath(sectionKey)}
                   onBlur={() => setFocusedPath(null)}
                   placeholder={`Enter value for ${label}`}
+                  fullWidth
                   aria-label={`Value for ${label}`}
+                  className={styles.translationInput}
                 />
-              )}
+              </FieldWrapper>
+            )}
 
-              {/* Image preview for image URLs */}
-              {isImageUrl && Boolean(value) && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
-                  <div className="text-sm text-gray-600 mb-2">
-                    Image Preview:
-                  </div>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={String(value)}
-                    alt={`Preview of ${label}`}
-                    className="max-w-full h-20 object-contain rounded border"
-                    onError={(e) => {
-                      const target = e.currentTarget as HTMLImageElement;
-                      target.style.display = "none";
-                      const nextElement =
-                        target.nextElementSibling as HTMLElement;
-                      if (nextElement) {
-                        nextElement.style.display = "block";
-                      }
-                    }}
-                  />
-                  <div className="hidden text-sm text-red-500">
-                    Failed to load image
-                  </div>
+            {/* Image preview for image URLs */}
+            {isImageUrl && Boolean(value) && (
+              <div className={styles.imagePreview}>
+                <div className={styles.imagePreviewTitle}>Image Preview:</div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={String(value)}
+                  alt={`Preview of ${label}`}
+                  className={styles.imagePreviewImg}
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.style.display = "none";
+                    const nextElement =
+                      target.nextElementSibling as HTMLElement;
+                    if (nextElement) {
+                      nextElement.style.display = "block";
+                    }
+                  }}
+                />
+                <div className={styles.imagePreviewError}>
+                  Failed to load image
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -277,16 +269,30 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   };
 
   if (isLoading) {
-    return <div>Loading translation...</div>;
+    return (
+      <div className={styles.statusMessage}>
+        <p className={styles.statusText}>Loading translation…</p>
+      </div>
+    );
   }
+
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <div className={styles.statusMessage}>
+        <p className={styles.statusText}>
+          Something went wrong while loading translations.
+        </p>
+      </div>
+    );
   }
+
   if (!templateMeta || !themeId) {
     return (
-      <div>
-        No template or theme selected. Please select both from the dropdown
-        above.
+      <div className={styles.statusMessage}>
+        <p className={styles.statusText}>
+          No template or theme selected. Please select both from the dropdown
+          above.
+        </p>
       </div>
     );
   }
@@ -296,37 +302,35 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
     Array.isArray(supportedLanguages) && supportedLanguages.length > 1;
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50 rounded-lg shadow p-6 overflow-hidden">
-      <div className="h-full flex gap-6">
-        <div className="flex flex-col w-96">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              {showLanguageSwitcher && (
-                <LanguageSwitcher
-                  supportedLanguages={supportedLanguages}
-                  selectedLang={language}
-                  onSelectLang={setLanguage}
-                />
-              )}
-              {hasUnsavedChanges && (
-                <span className="text-orange-600 text-sm font-medium">
-                  • Unsaved changes
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-auto pr-2 pl-2">
-            {translations && Object.keys(translations).length === 0 && (
-              <div className="text-gray-400 text-center py-8">
-                No translations found.
+    <div className={styles.root}>
+      <div className={styles.layout}>
+        <div className={styles.sidebar}>
+          {(showLanguageSwitcher || hasUnsavedChanges) && (
+            <div className={styles.header}>
+              <div className={styles.headerLeft}>
+                {hasUnsavedChanges && (
+                  <div className={styles.unsavedBadge}>• Unsaved changes</div>
+                )}
+                {showLanguageSwitcher && (
+                  <LanguageSwitcher
+                    supportedLanguages={supportedLanguages}
+                    selectedLang={language}
+                    onSelectLang={setLanguage}
+                  />
+                )}
               </div>
+            </div>
+          )}
+
+          <div className={styles.list}>
+            {translations && Object.keys(translations).length === 0 && (
+              <div className={styles.emptyState}>No translations found.</div>
             )}
             {renderFlatInputs()}
           </div>
         </div>
 
-        <div className="flex-1 h-full overflow-auto">
+        <div className={styles.previewPane}>
           <TranslationProvider
             locale={language as Locale}
             translations={translations}
@@ -344,5 +348,9 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
     </div>
   );
 };
+
+const FieldWrapper = ({ children }: { children: React.ReactNode }) => (
+  <div className={styles.fieldWrapper}>{children}</div>
+);
 
 export default TranslationEditor;

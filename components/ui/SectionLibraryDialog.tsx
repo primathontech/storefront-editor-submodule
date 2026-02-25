@@ -1,11 +1,11 @@
-import React from "react";
-import Dialog from "./Dialog";
 import { availableSectionsRegistry } from "@/registries/available-sections-registry";
-import styles from "./SectionLibraryDialog.module.css";
+import React from "react";
+import { htmlChatService } from "../../services/chat/chat-service";
+import { useEditorState } from "../../stores/useEditorState";
+import Dialog from "./Dialog";
 import { GenerateDialog } from "./GenerateDialog";
 import generateStyles from "./GenerateDialog.module.css";
-import { useEditorState } from "../../stores/useEditorState";
-import { htmlChatService } from "../../services/chat/chat-service";
+import styles from "./SectionLibraryDialog.module.css";
 
 // Sparkle icon SVG component
 export const SparkleIcon: React.FC<{ className?: string }> = ({
@@ -164,13 +164,13 @@ export const SectionLibraryDialog: React.FC<SectionLibraryDialogProps> = ({
             ) : null
           }
         >
-          <div className="h-[330px]">
+          <div className={styles["dialog-content"]}>
             {isGenerateDialogOpen ? (
               <GenerateDialog onGenerate={handleGenerateCustomHtml} />
             ) : (
-              <div className="flex gap-4 min-h-0 h-full">
+              <div className={styles["content-container"]}>
                 {/* Left: section list */}
-                <div className="w-1/3 space-y-1 max-h-full overflow-y-auto pr-2">
+                <div className={styles["section-list"]}>
                   {options.map((option) => {
                     const isSelected = option.value === selectedLibraryKey;
                     return (
@@ -192,16 +192,16 @@ export const SectionLibraryDialog: React.FC<SectionLibraryDialogProps> = ({
                 </div>
 
                 {/* Right: preview – only the inner preview box is clickable */}
-                <div className="h-full flex-1 border border-dashed border-gray-200 rounded-md p-3 flex flex-col bg-gray-50">
+                <div className={styles["preview-container"]}>
                   {selected ? (
                     <>
-                      <div className="mb-2 text-xs font-medium text-gray-500">
+                      <div className={styles["preview-label"]}>
                         {selected.label}
                       </div>
-                      <div className="flex-1 flex items-center justify-center">
+                      <div className={styles["preview-content"]}>
                         {selected.previewImage ? (
                           <div
-                            className="w-full max-w-full max-h-72 rounded-md border border-gray-200 bg-white flex items-center justify-center overflow-hidden cursor-pointer hover:shadow-md transition"
+                            className={styles["preview-image-wrapper"]}
                             onClick={() => {
                               if (selectedLibraryKey) {
                                 onConfirm(selectedLibraryKey);
@@ -212,11 +212,11 @@ export const SectionLibraryDialog: React.FC<SectionLibraryDialogProps> = ({
                             <img
                               src={selected.previewImage}
                               alt={selected.previewAlt}
-                              className="max-w-full max-h-full object-contain"
+                              className={styles["preview-image"]}
                             />
                           </div>
                         ) : (
-                          <div className="text-xs text-gray-400 text-center py-8">
+                          <div className={styles["no-preview-text"]}>
                             No preview image configured yet.
                           </div>
                         )}

@@ -17,6 +17,7 @@ import {
 import { translatePageConfig } from "../../utils/page-config-translator";
 import BuilderToolbar from "../ui/BuilderToolbar";
 import { SettingsSidebar } from "../ui/SettingsSidebar";
+import editorStyles from "./TemplateEditor.module.css";
 
 // Import widget registry setup to ensure widgets are registered
 import "@/core/widget-registry-setup";
@@ -44,7 +45,6 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
     setSelectedWidget,
     setShowSettingsDrawer,
     setThemeId,
-    setTemplateId,
     routeContext,
     setRouteContext,
     updateRouteHandle,
@@ -70,13 +70,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
   useEffect(() => {
     setRouteContext(templateMeta.routeContext);
-    setTemplateId(templateMeta.id);
-  }, [
-    setRouteContext,
-    setTemplateId,
-    templateMeta?.routeContext,
-    templateMeta?.id,
-  ]);
+  }, [setRouteContext, templateMeta?.routeContext]);
 
   // Load merchant ID, template, and i18n data in a single useEffect
   useEffect(() => {
@@ -170,22 +164,27 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
   useEffect(() => {
     const refetchData = async () => {
       const configForFetch = pendingPageConfig || pageConfig;
-      if (!configForFetch || !themeId || !routeContext || !pageDataStale)
+      if (!configForFetch || !themeId || !routeContext || !pageDataStale) {
         return;
+      }
 
-      let isCancelled = false;
+      const isCancelled = false;
       setIsLoadingData(true);
 
       try {
         const merchantNameFromAPI = await api.editor.getMerchantName();
-        if (isCancelled) return;
+        if (isCancelled) {
+          return;
+        }
 
         const realData = await api.editor.fetchEditorData({
           pageConfig: configForFetch,
           routeContext,
           merchantName: merchantNameFromAPI,
         });
-        if (isCancelled) return;
+        if (isCancelled) {
+          return;
+        }
         setPageData(realData);
         if (pendingPageConfig) {
           setPageConfig(pendingPageConfig);
@@ -325,38 +324,41 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
   // ✅ Conditional returns AFTER all hooks
   if (!pageConfig) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading template...</div>
+      <div className={editorStyles.loadingContainer}>
+        <div className={editorStyles.loadingText}>Loading template...</div>
       </div>
     );
   }
 
   if (!translationService) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading translations...</div>
+      <div className={editorStyles.loadingContainer}>
+        <div className={editorStyles.loadingText}>Loading translations...</div>
       </div>
     );
   }
 
+  const isPreviewMode = mode === "preview";
+  // In both preview mode and explicit fullscreen device mode,
+  // we want a canvas-only layout (no side panels).
+  const isCanvasOnlyLayout = isPreviewMode || device === "fullscreen";
+
   return (
     <div className="flex flex-1 min-h-0">
-      {device !== "fullscreen" && (
-        <div className="w-80 bg-white border-r border-gray-200 overflow-y-auto flex-shrink-0">
-          <BuilderToolbar
-            templateName={templateMeta?.name}
-            pageConfig={pageConfig}
-            currentLocale={language}
-            supportedLanguages={templateMeta?.supportedLanguages || ["en"]}
-            onRouteHandleChange={updateRouteHandle}
-            onLocaleChange={async (newLocale) => {
-              setLanguage(newLocale);
-              if (templateMeta?.id && themeId) {
-                await getTranslations(themeId, templateMeta.id, newLocale);
-              }
-            }}
-          />
-        </div>
+      {!isCanvasOnlyLayout && (
+        <BuilderToolbar
+          pageConfig={pageConfig}
+          currentLocale={language}
+          supportedLanguages={templateMeta?.supportedLanguages || ["en"]}
+          onRouteHandleChange={updateRouteHandle}
+          pageTitle={templateMeta?.name || templateMeta?.id || "Untitled Page"}
+          onLocaleChange={async (newLocale) => {
+            setLanguage(newLocale);
+            if (templateMeta?.id && themeId) {
+              await getTranslations(themeId, templateMeta.id, newLocale);
+            }
+          }}
+        />
       )}
       <div className="flex-1 overflow-auto p-4 flex justify-center">
         <Frame
@@ -402,8 +404,8 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
               {pageData ? (
                 renderedLayout
               ) : (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-gray-500">
+                <div className={styles.loadingContainer}>
+                  <div className={styles.loadingText}>
                     {isLoadingData ? "Loading data..." : "Loading preview..."}
                   </div>
                 </div>
@@ -413,7 +415,7 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
         </Frame>
       </div>
       {/* Right Settings Sidebar */}
-      {showSettingsDrawer && (
+      {!isCanvasOnlyLayout && showSettingsDrawer && (
         <SettingsSidebar translationService={translationService} />
       )}
     </div>

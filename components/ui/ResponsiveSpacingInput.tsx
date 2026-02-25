@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { FourSidedSpacingInput } from "./FourSidedSpacingInput";
-import { Label } from "@/ui/atomic";
-import { cn } from "../../utils/utils";
 import { useEditorState } from "../../stores/useEditorState";
-import { ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
+import {
+  SpacingFields,
+  type SpacingValue as SpacingFieldsValue,
+} from "./design-system";
 
 export interface ResponsiveSpacingValue {
   mobile?: {
@@ -32,13 +32,41 @@ export interface ResponsiveSpacingInputProps {
   showMargin?: boolean;
 }
 
+type FourSideSpacing = {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+};
+
+const ZERO_SPACING: FourSideSpacing = {
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+};
+
+const toFieldsValue = (source?: FourSideSpacing): SpacingFieldsValue => ({
+  top: source?.top ?? 0,
+  right: source?.right ?? 0,
+  bottom: source?.bottom ?? 0,
+  left: source?.left ?? 0,
+});
+
+const fromFieldsValue = (value: SpacingFieldsValue): FourSideSpacing => ({
+  top: typeof value.top === "number" ? value.top : 0,
+  right: typeof value.right === "number" ? value.right : 0,
+  bottom: typeof value.bottom === "number" ? value.bottom : 0,
+  left: typeof value.left === "number" ? value.left : 0,
+});
+
 const ResponsiveSpacingInput = React.forwardRef<
   HTMLDivElement,
   ResponsiveSpacingInputProps
 >(
   (
     {
-      label,
+      label: _label,
       value = {},
       onChange,
       disabled = false,
@@ -48,101 +76,79 @@ const ResponsiveSpacingInput = React.forwardRef<
     ref
   ) => {
     const device = useEditorState((state) => state.device);
-    const [isCollapsed, setIsCollapsed] = React.useState(true);
 
     // Map device to breakpoint: desktop/fullscreen → desktop, tablet → tablet, mobile → mobile
     const breakpoint: "mobile" | "tablet" | "desktop" =
       device === "fullscreen" ? "desktop" : device;
 
-    const currentBreakpointValue = value[breakpoint] || {};
+    const breakpointValue = value[breakpoint] || {};
+    const padding =
+      (breakpointValue.padding as FourSideSpacing) || ZERO_SPACING;
+    const margin = (breakpointValue.margin as FourSideSpacing) || ZERO_SPACING;
 
-    const handlePaddingChange = React.useCallback(
-      (padding: {
-        top: number;
-        right: number;
-        bottom: number;
-        left: number;
-      }) => {
-        if (!onChange) return;
-        onChange({
-          ...value,
-          [breakpoint]: {
-            ...currentBreakpointValue,
-            padding,
-          },
-        });
-      },
-      [value, onChange, breakpoint, currentBreakpointValue]
-    );
+    const paddingValue = toFieldsValue(padding);
+    const marginValue = toFieldsValue(margin);
 
-    const handleMarginChange = React.useCallback(
-      (margin: {
-        top: number;
-        right: number;
-        bottom: number;
-        left: number;
-      }) => {
-        if (!onChange) return;
-        onChange({
-          ...value,
-          [breakpoint]: {
-            ...currentBreakpointValue,
-            margin,
-          },
-        });
-      },
-      [value, onChange, breakpoint, currentBreakpointValue]
-    );
+    const updateBreakpoint = (updates: {
+      padding?: SpacingFieldsValue;
+      margin?: SpacingFieldsValue;
+    }) => {
+      if (!onChange) {
+        return;
+      }
+
+      const nextPadding = updates.padding
+        ? fromFieldsValue(updates.padding)
+        : padding;
+      const nextMargin = updates.margin
+        ? fromFieldsValue(updates.margin)
+        : margin;
+
+      onChange({
+        ...value,
+        [breakpoint]: {
+          padding: nextPadding,
+          margin: nextMargin,
+        },
+      });
+    };
+
+    const handlePaddingChange = (next: SpacingFieldsValue) => {
+      updateBreakpoint({ padding: next });
+    };
+
+    const handleMarginChange = (next: SpacingFieldsValue) => {
+      updateBreakpoint({ margin: next });
+    };
 
     return (
-      <div ref={ref} className={cn("space-y-2", className)}>
-        <button
-          type="button"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="flex items-center justify-between w-full group"
-        >
-          <Label className="text-xs font-semibold text-gray-800 cursor-pointer group-hover:text-gray-900">
-            {label || "Spacing"}
-          </Label>
-          {isCollapsed ? (
-            <ChevronDownIcon className="h-4 w-4 text-gray-600 group-hover:text-gray-900" />
-          ) : (
-            <ChevronUpIcon className="h-4 w-4 text-gray-600 group-hover:text-gray-900" />
-          )}
-        </button>
-
-        {!isCollapsed && (
-          <div className="space-y-4">
-            <FourSidedSpacingInput
-              label="Padding"
-              value={
-                currentBreakpointValue.padding || {
-                  top: 0,
-                  right: 0,
-                  bottom: 0,
-                  left: 0,
-                }
-              }
-              onChange={handlePaddingChange}
-              disabled={disabled}
-            />
-            {showMargin && (
-              <FourSidedSpacingInput
-                label="Margin"
-                value={
-                  currentBreakpointValue.margin || {
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                    left: 0,
-                  }
-                }
-                onChange={handleMarginChange}
-                disabled={disabled}
-              />
-            )}
-          </div>
+      <div ref={ref} className={className}>
+        {showMargin && (
+          <SpacingFields
+            title="Section margin"
+            labels={{
+              left: "Left margin",
+              top: "Top margin",
+              right: "Right margin",
+              bottom: "Bottom margin",
+            }}
+            value={marginValue}
+            onChange={handleMarginChange}
+            disabled={disabled}
+          />
         )}
+        <SpacingFields
+          title="Section padding"
+          labels={{
+            left: "Left padding",
+            top: "Top padding",
+            right: "Right padding",
+            bottom: "Bottom padding",
+          }}
+          value={paddingValue}
+          onChange={handlePaddingChange}
+          disabled={disabled}
+        />
       </div>
     );
   }

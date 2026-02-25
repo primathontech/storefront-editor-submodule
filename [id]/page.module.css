@@ -1,0 +1,78 @@
+/* Full screen centered container - flex flex-col h-screen items-center justify-center bg-[#F8F8F8] */
+.fullScreenCentered {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f8f8;
+}
+
+/* Loading spinner row - flex items-end gap-2 */
+.loadingRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* Spinner - animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mb-4 */
+.spinner {
+  animation: spin 1s linear infinite;
+  border-radius: 9999px;
+  height: 16px;
+  width: 16px;
+  border-bottom-width: 2px;
+  border-color: #2563eb;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Heading - text-xl font-semibold text-gray-700 mb-2 */
+.heading {
+  font-size: 20px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+/* Paragraph text - text-gray-500 */
+.paragraph {
+  color: #6b7280;
+}
+
+/* Centered text - text-center */
+.textCenter {
+  text-align: center;
+}
+
+/* Large icon/emoji - text-gray-400 text-6xl mb-4 */
+.largeIcon {
+  color: #9ca3af;
+  font-size: 60px;
+  margin-bottom: 16px;
+}
+
+/* Main container - flex flex-col h-screen bg-[#F8F8F8] */
+.mainContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f8f8f8;
+}
+
+/* Empty state container - flex-1 flex items-center justify-center bg-[#F8F8F8] */
+.emptyStateContainer {
+  flex: 1 1 0%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f8f8;
+}
