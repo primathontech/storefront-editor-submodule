@@ -69,6 +69,7 @@
   padding: 8px;
   border: 0.5px solid #d7d7d7;
   border-radius: 4px;
+  box-sizing: border-box;
   background-color: #ffffff;
   font-family: var(
     --font-inter,
@@ -126,7 +127,7 @@
 .input-md {
   padding: 8px;
   font-size: 10px;
-  min-height: 36px;
+  height: 32px;
 }
 
 .input-lg {

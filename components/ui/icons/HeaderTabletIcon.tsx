@@ -16,22 +16,21 @@ export const HeaderTabletIcon: React.FC<HeaderTabletIconProps> = ({
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="12"
-      height="14"
-      viewBox="0 0 12 14"
+      width="30"
+      height="30"
+      viewBox="0 0 30 30"
       fill="none"
     >
       <rect
-        x="0.25"
-        y="0.25"
-        width="10.5"
-        height="13.5"
-        rx="0.75"
-        fill="#F4F6F9"
+        x="9.35"
+        y="7.35"
+        width="10.3"
+        height="13.3"
+        rx="0.65"
         stroke="#999999"
-        strokeWidth="0.5"
+        strokeWidth="0.7"
       />
-      <rect x="11" y="2" width="0.2" height="2" rx="0.1" fill="#999999" />
+      <rect x="20" y="9" width="0.2" height="2" rx="0.1" fill="#999999" />
     </svg>
   );
 };

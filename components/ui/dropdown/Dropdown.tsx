@@ -308,16 +308,17 @@ const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                   top: `${menuPosition.top}px`,
                   left: `${menuPosition.left}px`,
                   transform: "translateX(-50%)",
-                  width: `${Math.max(menuPosition.width, 260)}px`,
+                  width: `${Math.max(menuPosition.width, 216)}px`,
                 }}
               >
                 <div className={styles["menu-content"]}>
-                  {groups.length > 0
-                    ? groups.map((group, groupIndex) => (
-                        <React.Fragment key={groupIndex}>
-                          {groupIndex > 0 && (
-                            <div className={styles["menu-separator"]} />
-                          )}
+                  {groups.length > 0 ? (
+                    groups.map((group, groupIndex) => (
+                      <React.Fragment key={groupIndex}>
+                        {groupIndex > 0 && (
+                          <div className={styles["menu-separator"]} />
+                        )}
+                        <div className={styles["menu-group"]}>
                           {group.options.map((option) => (
                             <button
                               key={option.value}
@@ -339,9 +340,12 @@ const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                               {option.label}
                             </button>
                           ))}
-                        </React.Fragment>
-                      ))
-                    : allOptions.map((option) => (
+                        </div>
+                      </React.Fragment>
+                    ))
+                  ) : (
+                    <div className={styles["menu-group"]}>
+                      {allOptions.map((option) => (
                         <button
                           key={option.value}
                           type="button"
@@ -362,6 +366,8 @@ const Dropdown = React.forwardRef<HTMLButtonElement, DropdownProps>(
                           {option.label}
                         </button>
                       ))}
+                    </div>
+                  )}
                 </div>
               </div>,
               document.body

@@ -162,6 +162,7 @@
   border-radius: 8px;
   box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  padding: 8px 0;
 }
 
 .menu-content {
@@ -169,8 +170,16 @@
   flex-direction: column;
   gap: 0;
   padding: 0;
-  max-height: 300px;
+  max-height: 476px;
   overflow-y: auto;
+}
+
+/* Menu Group: wraps a group of items with consistent spacing */
+.menu-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
 }
 
 /* Menu Item */
@@ -178,10 +187,10 @@
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 8px;
+  padding: 12px 4px;
   border: none;
   background: #ffffff;
-  border-radius: 0;
+  border-radius: 4px;
   font-family:
     "Inter",
     "Inter:Regular",
@@ -192,7 +201,7 @@
     Roboto,
     sans-serif;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.4;
   color: #666666;
   cursor: pointer;
