@@ -470,6 +470,11 @@ if (type === "DASHBOARD_HEARTBEAT" && sessionKeyRef.current) {
 # Used for postMessage origin verification
 # Example: https://dashboard.yourcompany.com
 NEXT_PUBLIC_ALLOWED_PARENT_ORIGIN=https://your-dashboard-domain.com
+
+# Feature flag to enable/disable the iframe auth gate.
+# When "true" → iframe + postMessage auth is enforced.
+# When "false" or unset → gate is bypassed and the editor is always allowed.
+NEXT_PUBLIC_IFRAME_AUTH_ENABLED=true
 ```
 
 ### Important notes:
@@ -477,6 +482,7 @@ NEXT_PUBLIC_ALLOWED_PARENT_ORIGIN=https://your-dashboard-domain.com
 - This MUST be the exact origin (protocol + host + port) — no trailing slash, no path
 - Examples: `https://dashboard.example.com`, `http://localhost:3000` (for staging)
 - The iframe auth gate is automatically bypassed when `NODE_ENV=development`
+- The iframe auth gate can be turned off in any environment (e.g. staging) by setting `NEXT_PUBLIC_IFRAME_AUTH_ENABLED=false`
 
 ---
 
