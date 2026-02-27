@@ -15,11 +15,22 @@ fi
 # When executed via 'bun run editor:pin', CWD is parent repo root
 # So we use relative paths from parent repo root
 
-# Fetch and checkout ref inside submodule
-git -C src/app/editor fetch origin "$REF" || true
+# Fetch latest branches and tags from origin so REF can be a remote-only branch or tag
+git -C src/app/editor fetch origin --tags
+
+# Verify the ref exists locally after fetch
+if ! git -C src/app/editor rev-parse --verify --quiet "$REF" >/dev/null; then
+  echo "Error: ref '$REF' not found after fetching from origin."
+  echo "Make sure the branch or tag exists on the 'origin' remote."
+  exit 1
+fi
+
+# Checkout the requested ref
 git -C src/app/editor checkout "$REF"
-if git -C src/app/editor rev-parse --verify --quiet "$REF" >/dev/null; then
-  git -C src/app/editor pull origin "$REF" || true
+
+# If REF is a branch that also exists on origin, fast-forward to the latest remote commit
+if git -C src/app/editor rev-parse --verify --quiet "origin/$REF" >/dev/null; then
+  git -C src/app/editor merge --ff-only "origin/$REF" || true
 fi
 
 EDITOR_SHA=$(git -C src/app/editor rev-parse --short HEAD)
