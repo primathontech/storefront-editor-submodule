@@ -871,7 +871,8 @@ export const RESPONSIVE_FRAME_STYLE = {
   tablet: {
     // Tablet: 768-1023px, using tablet min width (768px)
     width: DEFAULT_BREAKPOINTS.tablet.min,
-    height: 1024,
+    // Use min() so we don't overflow smaller viewports, but keep 1024px on taller screens
+    height: "min(1024px, 100%)",
     transition: "width 0.2s, height 0.2s",
     boxShadow: "0 0 24px rgba(0,0,0,0.2)",
     borderRadius: 12,

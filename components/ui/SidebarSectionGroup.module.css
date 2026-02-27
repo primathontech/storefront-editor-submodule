@@ -24,6 +24,7 @@
 
 .groupSelected {
   border-color: #1d4a88;
+  background: #3377ff1a;
 }
 
 .dragHandle {

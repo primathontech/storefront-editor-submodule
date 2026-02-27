@@ -1,9 +1,15 @@
 "use client";
 
+import { PreviewBreakpointProvider } from "@/lib/hooks/previewBreakpointContext";
 import { TranslationProvider } from "@/lib/i18n/translation-context";
 import { Locale } from "@/lib/i18n/types";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import Frame from "react-frame-component";
 import { useDualTranslationStore } from "../../stores/dualTranslationStore";
+import {
+  RESPONSIVE_FRAME_STYLE,
+  useEditorState,
+} from "../../stores/useEditorState";
 import { ArrayInput } from "../ui/ArrayInput";
 import { Input as DesignInput } from "../ui/design-system";
 import LanguageSwitcher from "../ui/LanguageSwitcher";
@@ -34,6 +40,7 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   } = useDualTranslationStore();
 
   const [focusedPath, setFocusedPath] = useState<string | null>(null);
+  const { device } = useEditorState();
 
   // Load translations when component mounts or dependencies change
   useEffect(() => {
@@ -42,6 +49,39 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
     }
     getTranslations(themeId, templateMeta.id, language);
   }, [templateMeta?.id, themeId, language]);
+
+  // Map device to breakpoint: desktop/fullscreen → desktop, tablet → tablet, mobile → mobile
+  const breakpoint: "mobile" | "tablet" | "desktop" =
+    device === "fullscreen" ? "desktop" : device;
+
+  // Collect parent stylesheets and style tags for iframe (same as TemplateEditor)
+  const headContent = useMemo(() => {
+    if (typeof document === "undefined") {
+      return "";
+    }
+
+    const links = Array.from(
+      document.querySelectorAll('link[rel="stylesheet"]')
+    )
+      .map((link) => link.outerHTML)
+      .join("\n");
+
+    const styles = Array.from(document.querySelectorAll("style"))
+      .map((style) => style.outerHTML)
+      .join("\n");
+
+    return `${links}\n${styles}`;
+  }, []);
+
+  // Copy font classes from root HTML to iframe HTML
+  // Stylesheets are already copied via headContent, we just need the classes
+  const rootHtmlClassName = useMemo(() => {
+    if (typeof document === "undefined") {
+      return "";
+    }
+    return document.documentElement.className || "";
+  }, []);
+  const editorPreviewClass = "editor-preview";
 
   // Scroll focused input into view
   useEffect(() => {
@@ -301,48 +341,76 @@ const TranslationEditor: React.FC<TranslationEditorProps> = ({
   const showLanguageSwitcher =
     Array.isArray(supportedLanguages) && supportedLanguages.length > 1;
 
+  // Hide sidebar in fullscreen mode (same as TemplateEditor)
+  const isCanvasOnlyLayout = device === "fullscreen";
+
   return (
     <div className={styles.root}>
       <div className={styles.layout}>
-        <div className={styles.sidebar}>
-          {(showLanguageSwitcher || hasUnsavedChanges) && (
-            <div className={styles.header}>
-              <div className={styles.headerLeft}>
-                {hasUnsavedChanges && (
-                  <div className={styles.unsavedBadge}>• Unsaved changes</div>
-                )}
-                {showLanguageSwitcher && (
-                  <LanguageSwitcher
-                    supportedLanguages={supportedLanguages}
-                    selectedLang={language}
-                    onSelectLang={setLanguage}
-                  />
-                )}
+        {!isCanvasOnlyLayout && (
+          <div className={styles.sidebar}>
+            {(showLanguageSwitcher || hasUnsavedChanges) && (
+              <div className={styles.header}>
+                <div className={styles.headerLeft}>
+                  {hasUnsavedChanges && (
+                    <div className={styles.unsavedBadge}>• Unsaved changes</div>
+                  )}
+                  {showLanguageSwitcher && (
+                    <LanguageSwitcher
+                      supportedLanguages={supportedLanguages}
+                      selectedLang={language}
+                      onSelectLang={setLanguage}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-
-          <div className={styles.list}>
-            {translations && Object.keys(translations).length === 0 && (
-              <div className={styles.emptyState}>No translations found.</div>
             )}
-            {renderFlatInputs()}
+
+            <div className={styles.list}>
+              {translations && Object.keys(translations).length === 0 && (
+                <div className={styles.emptyState}>No translations found.</div>
+              )}
+              {renderFlatInputs()}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className={styles.previewPane}>
-          <TranslationProvider
-            locale={language as Locale}
-            translations={translations}
-            isEditor={true}
-            focusedPath={focusedPath}
-            setFocusedPath={setFocusedPath}
+          <Frame
+            style={RESPONSIVE_FRAME_STYLE[device]}
+            initialContent={`<!DOCTYPE html>
+            <html${rootHtmlClassName ? ` class="${rootHtmlClassName}"` : ""}>
+              <head>
+                <meta name='viewport' content='width=device-width, initial-scale=1'>
+                ${headContent}
+                <style>
+                  html,body,#mountHere{width:100%;height:100%;margin:0;padding:0;}
+                  #website-canvas{}
+                </style>
+              </head>
+              <body class="${editorPreviewClass}">
+                <div id='mountHere'></div>
+              </body>
+            </html>`}
+            mountTarget="#mountHere"
           >
-            <LazyTemplateLoader
-              themeId={themeId}
-              templateId={templateMeta.id}
-            />
-          </TranslationProvider>
+            <PreviewBreakpointProvider breakpoint={breakpoint}>
+              <div id="website-canvas">
+                <TranslationProvider
+                  locale={language as Locale}
+                  translations={translations}
+                  isEditor={true}
+                  focusedPath={focusedPath}
+                  setFocusedPath={setFocusedPath}
+                >
+                  <LazyTemplateLoader
+                    themeId={themeId}
+                    templateId={templateMeta.id}
+                  />
+                </TranslationProvider>
+              </div>
+            </PreviewBreakpointProvider>
+          </Frame>
         </div>
       </div>
     </div>

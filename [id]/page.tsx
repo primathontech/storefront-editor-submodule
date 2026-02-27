@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { EditorContentShimmer } from "../components/ui/EditorContentShimmer";
 import { EditorHeaderShimmer } from "../components/ui/EditorHeaderShimmer";
 import { RightSidebarWidthProvider } from "../context/RightSidebarWidthContext";
+import { useIframeAuth } from "../hooks/useIframeAuth";
 import { api } from "../services/api";
 import { useEditorState } from "../stores/useEditorState";
 import styles from "./page.module.css";
@@ -34,6 +35,7 @@ const TranslationEditor = dynamic(
 export default function UnifiedEditorPage() {
   const params = useParams();
 
+  const { isAuthorized } = useIframeAuth();
   const [authState, setAuthState] = useState<{
     isValid: boolean | null;
     themeId?: string;
@@ -45,6 +47,10 @@ export default function UnifiedEditorPage() {
 
   useEffect(() => {
     const validateAuth = async () => {
+      if (isAuthorized !== true) {
+        return;
+      }
+
       try {
         const result = await api.editor.validateMerchantAuth(
           params.id as string
@@ -56,9 +62,13 @@ export default function UnifiedEditorPage() {
       }
     };
     validateAuth();
-  }, [params.id]);
+  }, [isAuthorized, params.id]);
 
   useEffect(() => {
+    if (isAuthorized !== true) {
+      return;
+    }
+
     if (!authState.themeId) {
       return;
     }
@@ -76,7 +86,37 @@ export default function UnifiedEditorPage() {
       }
     };
     loadData();
-  }, [authState.themeId]);
+  }, [authState.themeId, isAuthorized]);
+
+  // --- Iframe auth gate (before any other rendering or editor logic) ---
+
+  // Waiting for handshake
+  if (isAuthorized === null) {
+    return (
+      <div className={styles.fullScreenCentered}>
+        <div className={styles.loadingRow}>
+          <div className={styles.spinner}></div>
+          <h3 className={styles.heading}>Connecting to the editor...</h3>
+        </div>
+        <p className={styles.paragraph}>Preparing your editor workspace.</p>
+      </div>
+    );
+  }
+
+  // Access denied
+  if (isAuthorized === false) {
+    return (
+      <div className={styles.fullScreenCentered}>
+        <div className={styles.textCenter}>
+          <div className={styles.largeIcon}>🔒</div>
+          <h3 className={styles.heading}>Access Denied</h3>
+          <p className={styles.paragraph}>
+            You are not authorized to access this editor.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Show loading while initializing
   if (authState.isValid === null) {

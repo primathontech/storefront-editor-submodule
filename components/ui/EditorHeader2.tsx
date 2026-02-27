@@ -2,10 +2,9 @@ import { useToast } from "@/ui/context/toast/ToastContext";
 import React, { useState } from "react";
 import { useDualTranslationStore } from "../../stores/dualTranslationStore";
 import { useEditorState } from "../../stores/useEditorState";
-import { Button, IconButton } from "./design-system";
+import { Button } from "./design-system";
 import styles from "./EditorHeader2.module.css";
 import { EditIcon } from "./icons/EditIcon";
-import { HeaderHomeIcon } from "./icons/HeaderHomeIcon";
 import { HeaderMobileIcon } from "./icons/HeaderMobileIcon";
 import { HeaderMonitorIcon } from "./icons/HeaderMonitorIcon";
 import { HeaderStackedIcon } from "./icons/HeaderStackedIcon";
@@ -116,7 +115,7 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
     <header className={styles.header}>
       {/* Left side - Home icon + Theme name */}
       <div className={styles["left-container"]}>
-        <IconButton
+        {/* <IconButton
           icon={<HeaderHomeIcon />}
           size="md"
           variant="ghost"
@@ -124,7 +123,7 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
           aria-label="Back to themes"
           title="Back to themes"
         />
-        <div className={styles.divider} />
+        <div className={styles.divider} /> */}
         <span className={styles["theme-name"]}>{theme?.name || theme?.id}</span>
       </div>
 
@@ -139,12 +138,9 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
       <div className={styles["right-container"]}>
         <div className={styles["device-group"]}>
           {DEVICES.map(({ id, label, Icon }) => (
-            <IconButton
+            <button
               key={id}
-              icon={<Icon />}
-              size="md"
-              variant="ghost"
-              shape="square"
+              type="button"
               onClick={() => setDevice(id as typeof device)}
               aria-pressed={device === id}
               aria-label={`Switch to ${label} view`}
@@ -154,7 +150,9 @@ const EditorHeader2: React.FC<EditorHeader2Props> = ({
                   ? styles["device-button-active"]
                   : styles["device-button-inactive"]
               }`}
-            />
+            >
+              <Icon />
+            </button>
           ))}
         </div>
         <div className={styles["action-buttons-container"]}>
