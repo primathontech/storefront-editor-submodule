@@ -1,0 +1,567 @@
+# Iframe Auth Gate for Editor Routes
+
+## Table of Contents
+
+- [Problem Statement](#problem-statement)
+- [Current Security Model](#current-security-model)
+- [Solution: PostMessage Handshake](#solution-postmessage-handshake)
+  - [Security Layers Explained](#security-layers-explained)
+  - [About the SessionKey (UUID)](#about-the-sessionkey-uuid)
+  - [Attack Scenarios & What Blocks Them](#attack-scenarios--what-blocks-them)
+- [Recommended Approach](#recommended-approach)
+  - [Flow Diagram](#flow-diagram)
+  - [Editor-Side Implementation Guide](#editor-side-implementation-guide)
+  - [Dashboard-Side Integration Guide](#dashboard-side-integration-guide)
+- [Heartbeat (Optional Enhancement)](#heartbeat-optional-enhancement)
+- [Environment Configuration](#environment-configuration)
+- [Scope & Limitations](#scope--limitations)
+- [Verification Checklist](#verification-checklist)
+
+---
+
+## Problem Statement
+
+The Next.js editor (`/editor/[themeCode]`) is embedded inside an external dashboard using an iframe. The dashboard has proper user authentication, but the editor does not — it only validates the `themeCode` URL parameter against a backend API.
+
+**The vulnerability:** The `themeCode` is visible in the browser's address bar. Any user can:
+
+1. Right-click the iframe → "Copy frame URL"
+2. Open it in a new tab
+3. Get full editor access, bypassing the dashboard's authentication
+
+**Goal:** The editor should only render when accessed through the authorized dashboard iframe. Direct access should show "Access Denied".
+
+---
+
+## Current Security Model
+
+The editor's existing auth flow (`src/app/editor/[id]/page.tsx`):
+
+```
+User visits /editor/[themeCode]
+    → POST /editor/api/merchant-validation { themeCode }
+        → GET https://visual-editor-be.primathontech.co.in/api/v1/merchants/{MERCHANT_ID}
+            → checks: data.visualEditorId === themeCode
+                → match: { isValid: true, themeId: merchantName }
+                → no match: { isValid: false, error: "Invalid theme code" }
+```
+
+**What's checked:** The themeCode matches the merchant's `visualEditorId` on the external backend.
+
+**What's NOT checked:**
+
+- Whether the request comes from an iframe
+- Whether the parent page is the legitimate dashboard
+- Any user identity or session
+- Any time-based expiry
+
+**Result:** Anyone with a valid themeCode URL gets full editor access.
+
+---
+
+## Solution: PostMessage Handshake
+
+Use the browser's `window.postMessage` API to verify that the editor is loaded inside the authorized dashboard.
+
+### Security Layers Explained
+
+There are 4 security checks, each blocking different attack vectors. Understanding what each one actually does is critical.
+
+#### Layer 1: Iframe Detection
+
+```javascript
+window.self !== window.top;
+```
+
+- `window.self` = reference to the current window
+- `window.top` = reference to the topmost window in the frame hierarchy
+- If they're the same → the page is NOT in an iframe → **block access**
+- If they're different → the page IS in an iframe → proceed to next check
+
+**What it blocks:** Direct URL access in a new tab, shared URLs, bookmarks.
+
+**What it does NOT block:** Anyone who wraps the URL in their own iframe.
+
+#### Layer 2: Origin Verification
+
+```javascript
+event.origin === "https://your-dashboard-domain.com";
+```
+
+When a `postMessage` is received, the browser automatically sets `event.origin` to the **exact origin** of the sender. This is a browser-level guarantee — **no JavaScript, browser console, or extension can fake the `event.origin` property**.
+
+- If `event.origin` matches the allowed dashboard domain → proceed
+- If it doesn't match → **block access**
+
+**What it blocks:**
+
+- Fake iframe wrappers on other domains (origin = `https://attacker.com` → rejected)
+- Fake iframe wrappers from local HTML files (origin = `null` → rejected)
+- Console manipulation (dispatched events don't have real origins)
+- Browser extension injection (origin won't match unless extension compromises the dashboard domain itself)
+
+**This is the most important security layer.** The browser enforces it at a level that JavaScript cannot circumvent.
+
+#### Layer 3: Source Verification
+
+```javascript
+event.source === window.parent;
+```
+
+Confirms the message came specifically from the parent window (not a sibling iframe or popup).
+
+**What it blocks:** Messages from other iframes embedded on the same dashboard page, or popup windows.
+
+#### Layer 4: Message Structure Validation
+
+```javascript
+event.data?.type === "DASHBOARD_AUTH";
+// and optionally: event.data?.sessionKey is a valid UUID
+```
+
+Validates the message follows the expected protocol.
+
+**What it blocks:** Random/accidental messages from legitimate dashboard code that aren't part of the auth handshake.
+
+### About the SessionKey (UUID)
+
+The sessionKey is a random UUID (`crypto.randomUUID()`) generated by the dashboard for each session.
+
+**Common misconception:** The sessionKey is what blocks fake iframe wrappers.
+
+**Reality:** The **origin check** (Layer 2) is what blocks fake iframe wrappers. The browser guarantees `event.origin` accuracy. A fake wrapper on `attacker.com` fails at the origin check before the sessionKey is ever evaluated.
+
+**What the sessionKey actually provides:**
+
+| Benefit              | Explanation                                                                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Defense in depth     | If origin checking is ever misconfigured (e.g., someone sets a wildcard), the sessionKey still requires a correct value          |
+| Heartbeat enablement | If you implement heartbeat (periodic auth pings), you need a shared secret to verify subsequent messages match the original auth |
+| Protocol enforcement | Ensures the complete handshake was executed, not just any postMessage from the parent                                            |
+| Session binding      | Each iframe load gets a unique key — prevents reuse of intercepted messages across sessions                                      |
+
+**The sessionKey is a safety net, not the primary security mechanism.** Including it is recommended as defense-in-depth, but the origin check is what actually matters.
+
+### Attack Scenarios & What Blocks Them
+
+| Attack                                 | Step-by-step                                                                                | What blocks it                                                                                                              | SessionKey needed? |
+| -------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| **Copy URL to new tab**                | User copies iframe URL, opens in new tab                                                    | Layer 1: `window.self === window.top` → not in iframe → blocked                                                             | No                 |
+| **Share URL with others**              | User sends URL to colleague, they open it                                                   | Layer 1: Same as above → blocked                                                                                            | No                 |
+| **Fake iframe wrapper (other domain)** | Attacker creates `attacker.com/page.html` with `<iframe src="editor-url">`, sends handshake | Layer 2: `event.origin` = `https://attacker.com` ≠ allowed origin → blocked                                                 | No                 |
+| **Fake iframe wrapper (local file)**   | Attacker creates local `file.html` with iframe, sends handshake                             | Layer 2: `event.origin` = `null` ≠ allowed origin → blocked                                                                 | No                 |
+| **Console manipulation**               | User opens devtools, tries to dispatch fake MessageEvent                                    | Layer 2: Programmatically dispatched events don't carry real origins → blocked                                              | No                 |
+| **Browser extension injection**        | Extension injects script that sends postMessage                                             | Layer 2: Message origin = extension context, not dashboard domain → blocked                                                 | No                 |
+| **Same-origin attack**                 | Attacker hosts page on the SAME domain as dashboard, wraps editor                           | Layer 2: origin matches (!) → passes. Layer 4: sessionKey check → attacker doesn't know UUID → **blocked**                  | **Yes**            |
+| **XSS on dashboard**                   | Attacker injects script via XSS on dashboard domain                                         | All layers pass (attacker runs in dashboard context). But attacker could also read sessionKey from memory → **not blocked** | Not sufficient     |
+
+**Summary:** The sessionKey only adds protection for the "same-origin attack" scenario — when an attacker can host a page on the exact same domain as your dashboard. For all other scenarios, origin verification alone is sufficient.
+
+---
+
+## Recommended Approach
+
+Implement origin-verified PostMessage handshake with sessionKey (defense-in-depth).
+
+### Flow Diagram
+
+```
+Dashboard (separate app)                     Editor (this repo, in iframe)
+========================                     ============================
+
+1. User logs into dashboard
+2. User navigates to editor section
+3. Dashboard generates:
+   sessionKey = crypto.randomUUID()
+4. Dashboard renders:
+   <iframe src="/editor/[themeCode]">
+                                             5. Editor page loads
+                                             6. Editor checks:
+                                                Is window.self !== window.top?
+                                                ├─ NO  → Show "Access Denied" (not in iframe)
+                                                └─ YES → Continue...
+                                             7. Editor sends to parent:
+                                                { type: "EDITOR_READY" }
+8. Dashboard receives "EDITOR_READY"
+9. Dashboard responds:
+   { type: "DASHBOARD_AUTH",
+     sessionKey: "3f7a...n5o" }
+   → via postMessage to iframe
+                                             10. Editor receives message
+                                             11. Editor validates:
+                                                 ✓ event.origin === allowed origin
+                                                 ✓ event.source === window.parent
+                                                 ✓ data.type === "DASHBOARD_AUTH"
+                                                 ✓ data.sessionKey is valid UUID
+                                             12. All pass → Render editor
+                                                 Any fail → "Access Denied"
+
+                                             13. Timeout: If no DASHBOARD_AUTH
+                                                 received within 10s → "Access Denied"
+```
+
+### Editor-Side Implementation Guide
+
+#### Step 1: Create the `useIframeAuth` hook
+
+**File:** `src/app/editor/hooks/useIframeAuth.ts`
+
+```typescript
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+
+const ALLOWED_ORIGIN = process.env.NEXT_PUBLIC_ALLOWED_PARENT_ORIGIN;
+const AUTH_TIMEOUT_MS = 10_000; // 10 seconds to complete handshake
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+interface IframeAuthState {
+  isAuthorized: boolean | null; // null = waiting, true = granted, false = denied
+}
+
+export function useIframeAuth(): IframeAuthState {
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const sessionKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    // --- Dev bypass ---
+    if (process.env.NODE_ENV === "development") {
+      setIsAuthorized(true);
+      return;
+    }
+
+    // --- Gate 1: Iframe detection ---
+    if (window.self === window.top) {
+      // Not inside an iframe → block immediately
+      setIsAuthorized(false);
+      return;
+    }
+
+    // --- Gate 2+3+4: PostMessage handshake ---
+    const handleMessage = (event: MessageEvent) => {
+      // Verify origin
+      if (event.origin !== ALLOWED_ORIGIN) return;
+
+      // Verify source is parent window
+      if (event.source !== window.parent) return;
+
+      const { type, sessionKey } = event.data || {};
+
+      if (type === "DASHBOARD_AUTH" && typeof sessionKey === "string") {
+        // Validate sessionKey is a proper UUID
+        if (UUID_REGEX.test(sessionKey)) {
+          sessionKeyRef.current = sessionKey;
+          setIsAuthorized(true);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+
+    // Signal to parent that editor is ready for handshake
+    if (ALLOWED_ORIGIN) {
+      window.parent.postMessage({ type: "EDITOR_READY" }, ALLOWED_ORIGIN);
+    }
+
+    // Timeout: if no auth received within threshold, deny access
+    const timeout = setTimeout(() => {
+      setIsAuthorized((current) => {
+        // Only deny if still waiting (null)
+        return current === null ? false : current;
+      });
+    }, AUTH_TIMEOUT_MS);
+
+    return () => {
+      window.removeEventListener("message", handleMessage);
+      clearTimeout(timeout);
+    };
+  }, []);
+
+  return { isAuthorized };
+}
+```
+
+#### Step 2: Integrate into the editor page
+
+**File:** `src/app/editor/[id]/page.tsx`
+
+Add the auth gate at the top of `UnifiedEditorPage`, before the existing themeCode validation:
+
+```typescript
+// Add import
+import { useIframeAuth } from "../hooks/useIframeAuth";
+
+export default function UnifiedEditorPage() {
+  const { isAuthorized } = useIframeAuth();
+
+  // ... existing code (params, state, etc.) ...
+
+  // --- Iframe auth gate (before any other rendering) ---
+
+  // Waiting for handshake
+  if (isAuthorized === null) {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-gray-50">
+        <div className="flex items-end gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mb-4" />
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            Connecting...
+          </h3>
+        </div>
+        <p className="text-gray-500">
+          Waiting for dashboard authorization.
+        </p>
+      </div>
+    );
+  }
+
+  // Access denied
+  if (isAuthorized === false) {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="text-red-400 text-6xl mb-4">🔒</div>
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">
+            Access Denied
+          </h3>
+          <p className="text-gray-500">
+            This editor can only be accessed through the dashboard.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Authorized: existing editor code continues below ---
+  // ... rest of the component unchanged ...
+}
+```
+
+### Dashboard-Side Integration Guide
+
+The dashboard team needs to implement the following on any page that embeds the editor iframe.
+
+```javascript
+// ================================================================
+// Dashboard: Iframe Auth Handshake (add to editor iframe container)
+// ================================================================
+
+const EDITOR_ORIGIN = "https://your-editor-domain.com"; // the Next.js app origin
+const iframeRef = useRef(null); // or document.getElementById("editor-iframe")
+
+// Generate a unique session key for this editor session
+const sessionKey = crypto.randomUUID();
+// Example: "3f7a9b2c-4d5e-6f7g-8h9i-0j1k2l3m4n5o"
+
+useEffect(() => {
+  const handleMessage = (event) => {
+    // Only accept messages from our editor
+    if (event.origin !== EDITOR_ORIGIN) return;
+
+    // Editor signals it's ready for the handshake
+    if (event.data?.type === "EDITOR_READY") {
+      // Send authorization with session key
+      iframeRef.current?.contentWindow?.postMessage(
+        {
+          type: "DASHBOARD_AUTH",
+          sessionKey: sessionKey,
+        },
+        EDITOR_ORIGIN
+      );
+    }
+  };
+
+  window.addEventListener("message", handleMessage);
+  return () => window.removeEventListener("message", handleMessage);
+}, [sessionKey]);
+
+// Render the iframe
+return (
+  <iframe
+    ref={iframeRef}
+    src={`${EDITOR_ORIGIN}/editor/${themeCode}`}
+    style={{ width: "100%", height: "100%", border: "none" }}
+  />
+);
+```
+
+**Requirements for the dashboard team:**
+
+1. Generate `sessionKey` using `crypto.randomUUID()` — one per iframe load
+2. Listen for `"EDITOR_READY"` message from the iframe
+3. Respond with `"DASHBOARD_AUTH"` message containing the sessionKey
+4. Always specify the target origin (never use `"*"`)
+
+---
+
+## Heartbeat (Optional Enhancement)
+
+If you want to revoke editor access when the user navigates away from the dashboard or the dashboard session expires, implement a heartbeat.
+
+**How it works:**
+
+- Dashboard sends periodic `DASHBOARD_HEARTBEAT` messages with the same sessionKey
+- Editor tracks heartbeat arrivals
+- If heartbeats stop for 30 seconds after the first one was received, access is revoked
+- If the dashboard never sends heartbeats, the editor stays authorized from the initial handshake alone
+
+**This makes heartbeat opt-in from the dashboard side with zero additional config on the editor.**
+
+### Dashboard side (add after the auth handshake):
+
+```javascript
+// Start heartbeat after sending DASHBOARD_AUTH
+if (event.data?.type === "EDITOR_READY") {
+  // ... send DASHBOARD_AUTH (as above) ...
+
+  // Start periodic heartbeat
+  const heartbeatInterval = setInterval(() => {
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        type: "DASHBOARD_HEARTBEAT",
+        sessionKey: sessionKey,
+      },
+      EDITOR_ORIGIN
+    );
+  }, 15_000); // every 15 seconds
+
+  // Clean up on unmount
+  return () => clearInterval(heartbeatInterval);
+}
+```
+
+### Editor side (extend `useIframeAuth`):
+
+```typescript
+// Add inside the handleMessage function:
+if (type === "DASHBOARD_HEARTBEAT" && sessionKeyRef.current) {
+  if (sessionKey === sessionKeyRef.current) {
+    // Valid heartbeat — reset the inactivity timer
+    clearTimeout(heartbeatTimeoutRef.current);
+    heartbeatTimeoutRef.current = setTimeout(() => {
+      // Heartbeat stopped → revoke access
+      setIsAuthorized(false);
+    }, 30_000); // 30s without heartbeat = revoked
+  }
+}
+```
+
+**When to include heartbeat:**
+
+- Dashboard sessions can expire while the editor is open
+- You want to revoke access when the user navigates away from the editor section in the dashboard
+- Additional security against long-lived sessions
+
+**When heartbeat is NOT needed:**
+
+- The editor is only used for short sessions
+- The dashboard doesn't have session expiry concerns
+- You want the simplest possible implementation
+
+---
+
+## Environment Configuration
+
+### Editor side (.env)
+
+```bash
+# The origin (protocol + domain) of the dashboard that embeds the editor
+# Used for postMessage origin verification
+# Example: https://dashboard.yourcompany.com
+NEXT_PUBLIC_ALLOWED_PARENT_ORIGIN=https://your-dashboard-domain.com
+```
+
+### Important notes:
+
+- This MUST be the exact origin (protocol + host + port) — no trailing slash, no path
+- Examples: `https://dashboard.example.com`, `http://localhost:3000` (for staging)
+- The iframe auth gate is automatically bypassed when `NODE_ENV=development`
+
+---
+
+## Scope & Limitations
+
+### What this protects
+
+| Scenario                                     | Protected?                                  |
+| -------------------------------------------- | ------------------------------------------- |
+| User copies iframe URL to new tab            | Yes — iframe check blocks                   |
+| User shares URL with someone                 | Yes — iframe check blocks                   |
+| User bookmarks the editor URL                | Yes — iframe check blocks                   |
+| Attacker wraps URL in iframe on their domain | Yes — origin check blocks                   |
+| Attacker wraps URL in local HTML file        | Yes — origin check blocks (null origin)     |
+| Browser extension sends fake postMessage     | Yes — origin check blocks                   |
+| Console attempt to fake the handshake        | Yes — can't spoof event.origin              |
+| Attacker on same domain as dashboard         | Yes — sessionKey blocks (doesn't know UUID) |
+
+### What this does NOT protect
+
+| Scenario                              | Why                                                                                                                                                                                                                                                                                      |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Editor API routes called directly** | The auth gate only blocks UI rendering. All 9 API routes under `/editor/api/*` (templates, translations, editor-data, anthropic, etc.) remain callable by anyone who knows the themeCode. Protecting APIs requires server-side auth (JWT, session tokens, etc.) — a separate initiative. |
+| **XSS on the dashboard domain**       | If an attacker can execute JavaScript on the dashboard, they operate with the dashboard's full privileges — including sending valid handshakes and reading the sessionKey.                                                                                                               |
+| **Sophisticated reverse-engineering** | A determined attacker who can read the editor's source code, understand the protocol, and somehow gain access to the dashboard origin could potentially circumvent the gate.                                                                                                             |
+| **Man-in-the-middle attacks**         | If HTTPS is compromised, all bets are off. Ensure both dashboard and editor use HTTPS in production.                                                                                                                                                                                     |
+
+### Protection level: ~95%
+
+This approach effectively blocks all casual and moderately technical bypass attempts. The remaining ~5% requires either compromising the dashboard domain itself or server-side API access (which is out of scope for this client-side gate).
+
+---
+
+## Verification Checklist
+
+### Development mode
+
+- [ ] Run `npm run dev` (NODE_ENV=development)
+- [ ] Open `/editor/[themeCode]` directly in browser
+- [ ] **Expected:** Editor loads normally (gate is bypassed in dev mode)
+
+### Direct access blocked
+
+- [ ] Set `NODE_ENV=production` (or deploy to staging)
+- [ ] Open `/editor/[themeCode]` directly in a new browser tab
+- [ ] **Expected:** "Access Denied" page appears immediately (not in iframe)
+
+### Correct dashboard iframe works
+
+- [ ] Create a test HTML page on the allowed origin
+- [ ] Embed the editor in an iframe
+- [ ] Implement the handshake (EDITOR_READY → DASHBOARD_AUTH)
+- [ ] **Expected:** Editor loads after successful handshake
+
+### Wrong origin blocked
+
+- [ ] Create a test HTML page on a DIFFERENT domain (e.g., localhost:9999)
+- [ ] Embed the editor in an iframe, send a handshake
+- [ ] **Expected:** "Access Denied" after 10s timeout (origin mismatch)
+
+### No handshake timeout
+
+- [ ] Embed editor in iframe on the correct origin
+- [ ] Do NOT send the DASHBOARD_AUTH response
+- [ ] **Expected:** "Access Denied" after 10s timeout
+
+### Invalid sessionKey blocked
+
+- [ ] Send DASHBOARD_AUTH with `sessionKey: "not-a-uuid"`
+- [ ] **Expected:** "Access Denied" after 10s timeout (UUID validation fails)
+
+### Heartbeat (if implemented)
+
+- [ ] Send initial DASHBOARD_AUTH + start heartbeat every 15s
+- [ ] **Expected:** Editor stays accessible
+- [ ] Stop sending heartbeats
+- [ ] **Expected:** Access revoked after ~30s
+
+---
+
+## Files to Modify (Implementation Summary)
+
+| Action     | File                                    | Description                                                                  |
+| ---------- | --------------------------------------- | ---------------------------------------------------------------------------- |
+| **Create** | `src/app/editor/hooks/useIframeAuth.ts` | Custom hook with iframe detection, postMessage handling, origin verification |
+| **Modify** | `src/app/editor/[id]/page.tsx`          | Add `useIframeAuth()` call and gate UI (loading + access denied states)      |
+| **Modify** | `.env.example`                          | Add `NEXT_PUBLIC_ALLOWED_PARENT_ORIGIN`                                      |
+| **Modify** | `.env`                                  | Add `NEXT_PUBLIC_ALLOWED_PARENT_ORIGIN` with dashboard URL                   |
