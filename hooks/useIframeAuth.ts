@@ -6,6 +6,8 @@ const ALLOWED_ORIGIN = process.env.NEXT_PUBLIC_ALLOWED_PARENT_ORIGIN;
 const AUTH_TIMEOUT_MS = 10_000; // 10 seconds to complete handshake
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const IFRAME_AUTH_ENABLED =
+  process.env.NEXT_PUBLIC_IFRAME_AUTH_ENABLED === "true";
 
 export interface IframeAuthState {
   /**
@@ -30,7 +32,13 @@ export function useIframeAuth(): IframeAuthState {
   const sessionKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Development: bypass gate for local iteration and easier debugging
+    // Explicit bypass: when iframe auth feature-flag is off, always allow.
+    if (!IFRAME_AUTH_ENABLED) {
+      setIsAuthorized(true);
+      return;
+    }
+
+    // Development: additional safeguard for local iteration
     if (process.env.NODE_ENV === "development") {
       setIsAuthorized(true);
       return;
@@ -58,10 +66,14 @@ export function useIframeAuth(): IframeAuthState {
 
     const handleMessage = (event: MessageEvent) => {
       // --- Gate 2: origin verification ---
-      if (event.origin !== ALLOWED_ORIGIN) return;
+      if (event.origin !== ALLOWED_ORIGIN) {
+        return;
+      }
 
       // --- Gate 3: ensure the message came from the parent frame ---
-      if (event.source !== window.parent) return;
+      if (event.source !== window.parent) {
+        return;
+      }
 
       const data = event.data as
         | { type?: string; sessionKey?: string }
@@ -100,5 +112,3 @@ export function useIframeAuth(): IframeAuthState {
 
   return { isAuthorized };
 }
-
-
